@@ -47,6 +47,14 @@ Build a maintainable personal macOS launcher and automation workspace with Hamme
 - Window switcher
 - App switcher based on recent active windows
 
+### Notes
+
+- Scan a configurable Typora vault directory
+- Build a local `notes-index.json` with nodes, edges, tags, and recent files
+- Notes Center webview with link graph, hierarchy, tag clusters, browse, search, and recent views
+- Open notes in Typora from graph nodes, lists, and search results
+- Daily note shortcut and vault refresh shortcuts
+
 ## Maintenance Standards
 
 - Prefer small modules with clear boundaries

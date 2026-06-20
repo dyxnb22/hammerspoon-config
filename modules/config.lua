@@ -9,6 +9,7 @@ return {
   clipboardLimit = 80,
   hyper = { "ctrl", "alt", "cmd" },
   entryHotkey = { modifiers = { "cmd", "shift" }, key = "space" },
+  launcherFallbackHotkey = { modifiers = { "ctrl", "alt", "cmd" }, key = "space" },
   units = {
     left = { x = 0, y = 0, w = 0.5, h = 1 },
     right = { x = 0.5, y = 0, w = 0.5, h = 1 },
@@ -16,5 +17,18 @@ return {
     bottom = { x = 0, y = 0.5, w = 1, h = 0.5 },
     max = { x = 0, y = 0, w = 1, h = 1 },
     center = { x = 0.15, y = 0.1, w = 0.7, h = 0.8 },
+  },
+  notes = {
+    vaultPath = os.getenv("HOME") .. "/Documents/Notes",
+    typoraApp = "Typora",
+    indexFile = hs.configdir .. "/notes-index.json",
+    dailyDir = "journal",
+    hotkeys = {
+      center = { modifiers = { "ctrl", "alt", "cmd" }, key = "N" },
+      recent = { modifiers = { "ctrl", "alt", "cmd", "shift" }, key = "N" },
+      newDaily = { modifiers = { "ctrl", "alt", "cmd" }, key = "D" },
+      refresh = { modifiers = { "ctrl", "alt", "cmd" }, key = "I" },
+      openVault = { modifiers = { "ctrl", "alt", "cmd" }, key = "O" },
+    },
   },
 }

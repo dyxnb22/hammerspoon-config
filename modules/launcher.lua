@@ -1,92 +1,87 @@
 return function(config, helpers)
+  local createPanel = require("webview_panel")(config, helpers)
+  local settings = hs.settings
+  local layoutKey = "launcherCardOrder"
+
+  local function loadLayoutOrder()
+    return settings.get(layoutKey) or {}
+  end
+
+  local function saveLayoutOrder(order)
+    if type(order) == "table" then
+      settings.set(layoutKey, order)
+    end
+  end
+
+  local function applyLayoutOrder(items)
+    local saved = loadLayoutOrder()
+    local lookup = {}
+
+    for _, item in ipairs(items or {}) do
+      lookup[item.id] = item
+    end
+
+    local ordered = {}
+    local seen = {}
+
+    for _, id in ipairs(saved) do
+      if lookup[id] then
+        table.insert(ordered, lookup[id])
+        seen[id] = true
+      end
+    end
+
+    for _, item in ipairs(items or {}) do
+      if not seen[item.id] then
+        table.insert(ordered, item)
+      end
+    end
+
+    return ordered
+  end
+
+  local panel = createPanel({
+    channel = "launcher",
+    htmlPath = config.assetsDir .. "/launcher.html",
+    frame = function()
+      local screen = hs.screen.mainScreen():frame()
+      local width = math.min(960, screen.w - 48)
+      local height = math.min(740, screen.h - 48)
+
+      return {
+        x = screen.x + math.floor((screen.w - width) / 2),
+        y = screen.y + math.floor((screen.h - height) / 2),
+        w = width,
+        h = height,
+      }
+    end,
+    onMessage = function(payload)
+      if payload.type == "saveLayout" and payload.order then
+        saveLayoutOrder(payload.order)
+      end
+    end,
+  })
+
   local M = {}
-  local webview = require("hs.webview")
-
-  local launcherView = nil
-  local launcherController = nil
-  local launcherActions = {}
-  local launcherHtml = helpers.readFile(config.assetsDir .. "/launcher.html")
-
-  local function launcherFrame()
-    local screen = hs.screen.mainScreen():frame()
-    local width = math.min(940, screen.w - 60)
-    local height = math.min(720, screen.h - 80)
-
-    return {
-      x = screen.x + math.floor((screen.w - width) / 2),
-      y = screen.y + math.floor((screen.h - height) / 2),
-      w = width,
-      h = height,
-    }
-  end
-
-  local function hideLauncher()
-    if launcherView then
-      launcherView:hide(0.12)
-    end
-  end
-
-  local function ensureLauncher()
-    if launcherView then
-      launcherView:frame(launcherFrame())
-      return
-    end
-
-    launcherController = webview.usercontent.new("launcher")
-    launcherController:setCallback(function(message)
-      if type(message) ~= "table" then
-        return
-      end
-
-      if message.type == "close" then
-        hideLauncher()
-        return
-      end
-
-      if message.type == "run" and message.id then
-        hideLauncher()
-        local action = launcherActions[message.id]
-        if action then
-          hs.timer.doAfter(0.08, action)
-        end
-      end
-    end)
-
-    launcherView = webview.new(launcherFrame(), {}, launcherController)
-      :windowStyle({})
-      :allowTextEntry(true)
-      :transparent(true)
-      :shadow(true)
-      :deleteOnClose(false)
-      :closeOnEscape(false)
-      :level(hs.drawing.windowLevels.modalPanel)
-      :behaviorAsLabels({ "canJoinAllSpaces", "fullScreenAuxiliary", "ignoresCycle" })
-      :windowCallback(function(action, _, state)
-        if action == "focusChange" and state == false then
-          hideLauncher()
-        end
-      end)
-
-    launcherView:html(launcherHtml)
-  end
 
   function M.toggle(items, actions)
-    ensureLauncher()
+    local ok, err = pcall(function()
+      local orderedItems = applyLayoutOrder(items or {})
+      local payload = hs.json.encode({
+        items = orderedItems,
+        layout = loadLayoutOrder(),
+      })
 
-    local hsWindow = launcherView:hswindow()
-    if hsWindow and hsWindow:isVisible() then
-      hideLauncher()
-      return
-    end
-
-    launcherActions = actions or {}
-    launcherView:html(launcherHtml)
-    launcherView:show(0.10):bringToFront(true)
-    hs.timer.doAfter(0.12, function()
-      if launcherView then
-        launcherView:evaluateJavaScript("window.setLauncherItems(" .. hs.json.encode(items or {}) .. "); window.focusLauncher();")
-      end
+      panel.toggle({
+        actions = actions or {},
+        eval = "window.setLauncherState(" .. payload .. "); window.focusLauncher();",
+      })
     end)
+
+    if not ok then
+      hs.alert.show("Launcher failed to open")
+      hs.printf("launcher toggle error: %s", tostring(err))
+    end
   end
 
   return M

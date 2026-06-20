@@ -41,6 +41,7 @@ These files stay outside Git on purpose:
 
 - `~/.hammerspoon/init.lua`
 - `~/.hammerspoon/todos.json`
+- `~/.hammerspoon/notes-index.json`
 
 ## Current Modules
 
@@ -54,6 +55,8 @@ These files stay outside Git on purpose:
   Local TODO capture and management
 - `launcher`
   Card-style launcher UI and action bridge
+- `notes`
+  Typora vault scanner, notes center webview, graph and search
 
 ## Hotkeys
 
@@ -71,6 +74,16 @@ These files stay outside Git on purpose:
   Open TODO manager
 - `Ctrl + Alt + Cmd + G`
   Open translation prompt
+- `Ctrl + Alt + Cmd + N`
+  Open notes center
+- `Ctrl + Alt + Cmd + Shift + N`
+  Open recent notes
+- `Ctrl + Alt + Cmd + D`
+  Create or open today's daily note
+- `Ctrl + Alt + Cmd + I`
+  Refresh notes index
+- `Ctrl + Alt + Cmd + O`
+  Open notes vault in Finder
 - `Ctrl + Alt + Cmd + H/L/K/J`
   Tile left/right/top/bottom
 - `Ctrl + Alt + Cmd + F`
@@ -90,6 +103,7 @@ return {
   clipboard = true,
   translate = false,
   todo = true,
+  notes = true,
 }
 ```
 
@@ -132,3 +146,10 @@ Important project rules live in:
 - Snippet runner
 - Better app icons and metadata in launcher cards
 - Search ranking tuned for active development workflows
+- Backlinks panel and richer graph layouts in notes center
+
+## Notes Vault Setup
+
+Edit `modules/config.lua` and set `notes.vaultPath` to your Typora vault directory.
+
+On first open, Notes Center creates a starter vault with sample linked notes if the directory is empty.

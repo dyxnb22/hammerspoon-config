@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: rgba(248, 249, 252, 0.82);
+      --panel: rgba(255, 255, 255, 0.74);
+      --panel-border: rgba(255, 255, 255, 0.56);
+      --text: #111827;
+      --muted: #667085;
+      --hairline: rgba(15, 23, 42, 0.08);
+      --shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
+      --accent: #2b6ef2;
+      --accent-soft: rgba(43, 110, 242, 0.12);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: rgba(12, 18, 28, 0.78);
+        --panel: rgba(18, 24, 36, 0.82);
+        --panel-border: rgba(255, 255, 255, 0.08);
+        --text: #f4f7fb;
+        --muted: #96a2b8;
+        --hairline: rgba(255, 255, 255, 0.08);
+        --shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+        --accent-soft: rgba(94, 168, 255, 0.16);
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+      background: transparent;
+      color: var(--text);
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background:
+        radial-gradient(circle at top left, rgba(94, 168, 255, 0.14), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(94, 117, 255, 0.16), transparent 32%),
+        var(--bg);
+      backdrop-filter: blur(28px) saturate(140%);
+      -webkit-backdrop-filter: blur(28px) saturate(140%);
+    }
+
+    .shell {
+      width: min(1140px, 100%);
+      height: min(780px, 100%);
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+    }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 22px 24px 10px;
+      align-items: flex-start;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button, .tab {
+      border: 1px solid var(--hairline);
+      background: rgba(255, 255, 255, 0.18);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    button:hover, .tab:hover, .tab.active {
+      background: var(--accent-soft);
+      border-color: rgba(43, 110, 242, 0.28);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 0 24px 14px;
+      flex-wrap: wrap;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .search {
+      flex: 1;
+      min-width: 220px;
+      height: 42px;
+      border-radius: 14px;
+      border: 1px solid var(--hairline);
+      background: rgba(255, 255, 255, 0.18);
+      color: var(--text);
+      padding: 0 14px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .content {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      border-top: 1px solid var(--hairline);
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--hairline);
+      overflow: auto;
+      padding: 14px;
+    }
+
+    .main {
+      min-width: 0;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .panel {
+      display: none;
+      width: 100%;
+      height: 100%;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    #graphCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .item {
+      border: 1px solid transparent;
+      border-radius: 14px;
+      padding: 10px 12px;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.10);
+    }
+
+    .item:hover, .item.active {
+      background: rgba(255, 255, 255, 0.22);
+      border-color: var(--hairline);
+    }
+
+    .itemTitle {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      word-break: break-word;
+    }
+
+    .itemMeta {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .tagRow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .tag {
+      font-size: 10px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--muted);
+    }
+
+    .sectionTitle {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 10px 0 8px;
+    }
+
+    .empty {
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 20px 14px;
+      border-top: 1px solid var(--hairline);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .tooltip {
+      position: absolute;
+      pointer-events: none;
+      display: none;
+      max-width: 280px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(20, 24, 34, 0.92);
+      color: #f8fafc;
+      font-size: 12px;
+      line-height: 1.4;
+      z-index: 20;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    @media (max-width: 900px) {
+      .content {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="hero">
+      <div>
+        <h1 class="title">Notes Center</h1>
+        <div class="subtitle" id="vaultLabel">Typora vault manager</div>
+      </div>
+      <div class="actions">
+        <button id="newDailyBtn" type="button">New Today</button>
+        <button id="refreshBtn" type="button">Refresh Index</button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="tabs">
+        <button class="tab active" data-view="graph" type="button">Graph</button>
+        <button class="tab" data-view="browse" type="button">Browse</button>
+        <button class="tab" data-view="search" type="button">Search</button>
+        <button class="tab" data-view="recent" type="button">Recent</button>
+      </div>
+      <select id="graphMode" class="search" style="max-width: 180px; height: 42px;">
+        <option value="links">Link Graph</option>
+        <option value="parent">Hierarchy</option>
+        <option value="tags">Tag Clusters</option>
+      </select>
+      <input id="searchInput" class="search" type="search" placeholder="Search title, path, tags, content..." />
+    </div>
+
+    <div class="content">
+      <aside class="sidebar">
+        <div class="sectionTitle">Filters</div>
+        <div id="folderFilters" class="list"></div>
+        <div class="sectionTitle">Tags</div>
+        <div id="tagFilters" class="list"></div>
+      </aside>
+
+      <main class="main">
+        <section id="graphPanel" class="panel active">
+          <canvas id="graphCanvas"></canvas>
+          <div id="graphTooltip" class="tooltip"></div>
+        </section>
+        <section id="browsePanel" class="panel">
+          <div id="browseList" class="list" style="padding: 16px; overflow: auto; height: 100%;"></div>
+        </section>
+        <section id="searchPanel" class="panel">
+          <div id="searchList" class="list" style="padding: 16px; overflow: auto; height: 100%;"></div>
+        </section>
+        <section id="recentPanel" class="panel">
+          <div id="recentList" class="list" style="padding: 16px; overflow: auto; height: 100%;"></div>
+        </section>
+      </main>
+    </div>
+
+    <div class="footer">
+      <div>Click a node or note to open in Typora</div>
+      <div id="statsLabel">0 notes</div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      rootFolderKey: '__ROOT__',
+      index: { nodes: [], edges: [], tags: {}, recent: [], vault: '' },
+      view: 'graph',
+      graphMode: 'links',
+      folderFilter: '',
+      tagFilter: '',
+      searchQuery: '',
+      selectedId: null,
+      graphNodes: [],
+      graphEdges: [],
+      simNodes: [],
+      hoveredId: null,
+      draggingId: null,
+      panX: 0,
+      panY: 0,
+      scale: 1,
+    };
+
+    const graphCanvas = document.getElementById('graphCanvas');
+    const graphCtx = graphCanvas.getContext('2d');
+    const tooltip = document.getElementById('graphTooltip');
+
+    function postMessage(payload) {
+      try {
+        webkit.messageHandlers.notes.postMessage(payload);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function formatTime(ts) {
+      if (!ts) return '';
+      return new Date(ts * 1000).toLocaleString();
+    }
+
+    function nodeById(id) {
+      return state.index.nodes.find(node => node.id === id);
+    }
+
+    function filteredNodes() {
+      return state.index.nodes.filter(node => {
+        if (state.folderFilter) {
+          const nodeFolder = node.folder || state.rootFolderKey;
+          if (nodeFolder !== state.folderFilter) return false;
+        }
+        if (state.tagFilter && !(node.tags || []).includes(state.tagFilter)) return false;
+        return true;
+      });
+    }
+
+    function scoreNode(node, query) {
+      if (!query) return 1;
+      const q = query.toLowerCase();
+      const haystack = [
+        node.title,
+        node.relPath,
+        node.path,
+        (node.tags || []).join(' '),
+        node.excerpt,
+      ].join(' ').toLowerCase();
+
+      if (node.title.toLowerCase().startsWith(q)) return 300;
+      if (node.title.toLowerCase().includes(q)) return 200;
+      if (haystack.includes(q)) return 100;
+      return -1;
+    }
+
+    function renderItem(node, extra) {
+      const tags = (node.tags || []).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('');
+      return `
+        <div class="item" data-path="${escapeHtml(node.path)}">
+          <div class="itemTitle">${escapeHtml(node.title)}</div>
+          <div class="itemMeta">${escapeHtml(node.relPath || node.path)}</div>
+          <div class="itemMeta">${escapeHtml(formatTime(node.mtime))}${extra ? ' · ' + escapeHtml(extra) : ''}</div>
+          ${tags ? `<div class="tagRow">${tags}</div>` : ''}
+        </div>
+      `;
+    }
+
+    function bindListClicks(container) {
+      for (const node of container.querySelectorAll('.item')) {
+        node.addEventListener('click', () => {
+          postMessage({ type: 'open', path: node.dataset.path });
+        });
+      }
+    }
+
+    function renderFilters() {
+      const folders = new Set();
+      const tags = Object.keys(state.index.tags || {}).sort();
+
+      for (const node of state.index.nodes) {
+        folders.add(node.folder || '(root)');
+      }
+
+      const folderFilters = document.getElementById('folderFilters');
+      folderFilters.innerHTML = [''].concat([...folders].sort()).map(folder => {
+        const isRoot = folder === '(root)';
+        const value = isRoot ? state.rootFolderKey : folder;
+        const label = folder === '' ? 'All folders' : folder;
+        const active = state.folderFilter === value ? ' active' : '';
+        return `<div class="item${active}" data-folder="${escapeHtml(value)}"><div class="itemTitle">${escapeHtml(label)}</div></div>`;
+      }).join('');
+
+      for (const item of folderFilters.querySelectorAll('.item')) {
+        item.addEventListener('click', () => {
+          state.folderFilter = item.dataset.folder || '';
+          renderAll();
+        });
+      }
+
+      const tagFilters = document.getElementById('tagFilters');
+      tagFilters.innerHTML = [''].concat(tags).map(tag => {
+        const label = tag === '' ? 'All tags' : tag;
+        const active = state.tagFilter === tag ? ' active' : '';
+        return `<div class="item${active}" data-tag="${escapeHtml(tag)}"><div class="itemTitle">${escapeHtml(label)}</div></div>`;
+      }).join('');
+
+      for (const item of tagFilters.querySelectorAll('.item')) {
+        item.addEventListener('click', () => {
+          state.tagFilter = item.dataset.tag || '';
+          renderAll();
+        });
+      }
+    }
+
+    function renderBrowse() {
+      const list = document.getElementById('browseList');
+      const nodes = filteredNodes().sort((a, b) => a.relPath.localeCompare(b.relPath));
+      list.innerHTML = nodes.length
+        ? nodes.map(node => renderItem(node)).join('')
+        : '<div class="empty">No notes in this filter.</div>';
+      bindListClicks(list);
+    }
+
+    function renderSearch() {
+      const list = document.getElementById('searchList');
+      const query = state.searchQuery.trim();
+      const nodes = filteredNodes()
+        .map(node => ({ node, score: scoreNode(node, query) }))
+        .filter(entry => entry.score >= 0)
+        .sort((a, b) => b.score - a.score)
+        .map(entry => entry.node);
+
+      list.innerHTML = nodes.length
+        ? nodes.map(node => renderItem(node, node.excerpt)).join('')
+        : '<div class="empty">No matches yet.</div>';
+      bindListClicks(list);
+    }
+
+    function renderRecent() {
+      const list = document.getElementById('recentList');
+      const allowed = new Set(filteredNodes().map(node => node.id));
+      const nodes = (state.index.recent || []).filter(item => allowed.has(item.id));
+      list.innerHTML = nodes.length
+        ? nodes.map(item => renderItem(item)).join('')
+        : '<div class="empty">No recent notes.</div>';
+      bindListClicks(list);
+    }
+
+    function buildGraphData() {
+      const nodes = filteredNodes();
+      const allowed = new Set(nodes.map(node => node.id));
+      let edges = (state.index.edges || []).filter(edge => allowed.has(edge.from) && allowed.has(edge.to));
+
+      if (state.graphMode === 'parent') {
+        edges = edges.filter(edge => edge.type === 'parent');
+      } else if (state.graphMode === 'tags') {
+        edges = [];
+        for (const [tag, ids] of Object.entries(state.index.tags || {})) {
+          const visible = ids.filter(id => allowed.has(id));
+          for (let i = 0; i < visible.length; i++) {
+            for (let j = i + 1; j < visible.length; j++) {
+              edges.push({ from: visible[i], to: visible[j], type: 'tag', tag });
+            }
+          }
+        }
+      } else {
+        edges = edges.filter(edge => edge.type !== 'parent');
+      }
+
+      state.graphNodes = nodes;
+      state.graphEdges = edges;
+      initSimulation();
+    }
+
+    function initSimulation() {
+      const rect = graphCanvas.getBoundingClientRect();
+      const width = rect.width || 800;
+      const height = rect.height || 500;
+      const centerX = width / 2;
+      const centerY = height / 2;
+
+      state.simNodes = state.graphNodes.map((node, index) => {
+        const angle = (index / Math.max(state.graphNodes.length, 1)) * Math.PI * 2;
+        const radius = Math.min(width, height) * 0.28;
+        return {
+          id: node.id,
+          node,
+          x: centerX + Math.cos(angle) * radius,
+          y: centerY + Math.sin(angle) * radius,
+          vx: 0,
+          vy: 0,
+        };
+      });
+
+      const lookup = new Map(state.simNodes.map(item => [item.id, item]));
+      state.graphEdges.forEach(edge => {
+        const from = lookup.get(edge.from);
+        const to = lookup.get(edge.to);
+        if (!from || !to) return;
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const dist = Math.max(Math.hypot(dx, dy), 1);
+        const force = (dist - 120) * 0.02;
+        from.vx += (dx / dist) * force;
+        from.vy += (dy / dist) * force;
+        to.vx -= (dx / dist) * force;
+        to.vy -= (dy / dist) * force;
+      });
+    }
+
+    function resizeCanvas() {
+      const rect = graphCanvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      graphCanvas.width = rect.width * ratio;
+      graphCanvas.height = rect.height * ratio;
+      graphCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      drawGraph();
+    }
+
+    function drawGraph() {
+      const rect = graphCanvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+      graphCtx.clearRect(0, 0, width, height);
+
+      if (!state.simNodes.length) {
+        graphCtx.fillStyle = getComputedStyle(document.body).getPropertyValue('--muted');
+        graphCtx.font = '14px -apple-system, sans-serif';
+        graphCtx.fillText('No notes to graph yet. Refresh index after adding markdown files.', 24, 40);
+        return;
+      }
+
+      const lookup = new Map(state.simNodes.map(item => [item.id, item]));
+
+      for (const edge of state.graphEdges) {
+        const from = lookup.get(edge.from);
+        const to = lookup.get(edge.to);
+        if (!from || !to) continue;
+        graphCtx.strokeStyle = edge.type === 'parent'
+          ? 'rgba(43, 110, 242, 0.55)'
+          : 'rgba(120, 130, 150, 0.35)';
+        graphCtx.lineWidth = edge.type === 'parent' ? 2 : 1;
+        graphCtx.beginPath();
+        graphCtx.moveTo(from.x, from.y);
+        graphCtx.lineTo(to.x, to.y);
+        graphCtx.stroke();
+      }
+
+      for (const item of state.simNodes) {
+        const active = item.id === state.hoveredId || item.id === state.selectedId;
+        const radius = active ? 10 : 7;
+        graphCtx.beginPath();
+        graphCtx.fillStyle = active ? '#2b6ef2' : '#5ea8ff';
+        graphCtx.arc(item.x, item.y, radius, 0, Math.PI * 2);
+        graphCtx.fill();
+
+        if (active) {
+          graphCtx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text');
+          graphCtx.font = '12px -apple-system, sans-serif';
+          graphCtx.fillText(item.node.title, item.x + 12, item.y - 10);
+        }
+      }
+    }
+
+    function stepSimulation() {
+      const rect = graphCanvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const lookup = new Map(state.simNodes.map(item => [item.id, item]));
+
+      for (let i = 0; i < state.simNodes.length; i++) {
+        for (let j = i + 1; j < state.simNodes.length; j++) {
+          const a = state.simNodes[i];
+          const b = state.simNodes[j];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const dist = Math.max(Math.hypot(dx, dy), 1);
+          const force = 900 / (dist * dist);
+          a.vx -= (dx / dist) * force;
+          a.vy -= (dy / dist) * force;
+          b.vx += (dx / dist) * force;
+          b.vy += (dy / dist) * force;
+        }
+      }
+
+      for (const edge of state.graphEdges) {
+        const from = lookup.get(edge.from);
+        const to = lookup.get(edge.to);
+        if (!from || !to) continue;
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const dist = Math.max(Math.hypot(dx, dy), 1);
+        const force = (dist - 110) * 0.03;
+        from.vx += (dx / dist) * force;
+        from.vy += (dy / dist) * force;
+        to.vx -= (dx / dist) * force;
+        to.vy -= (dy / dist) * force;
+      }
+
+      for (const item of state.simNodes) {
+        item.vx += (centerX - item.x) * 0.001;
+        item.vy += (centerY - item.y) * 0.001;
+        item.vx *= 0.84;
+        item.vy *= 0.84;
+        item.x += item.vx;
+        item.y += item.vy;
+        item.x = Math.max(24, Math.min(width - 24, item.x));
+        item.y = Math.max(24, Math.min(height - 24, item.y));
+      }
+
+      drawGraph();
+      requestAnimationFrame(stepSimulation);
+    }
+
+    function graphNodeAt(x, y) {
+      for (let i = state.simNodes.length - 1; i >= 0; i--) {
+        const item = state.simNodes[i];
+        if (Math.hypot(item.x - x, item.y - y) <= 12) {
+          return item;
+        }
+      }
+      return null;
+    }
+
+    function showTooltip(item, x, y) {
+      if (!item) {
+        tooltip.style.display = 'none';
+        return;
+      }
+      tooltip.style.display = 'block';
+      tooltip.style.left = `${x + 14}px`;
+      tooltip.style.top = `${y + 14}px`;
+      tooltip.innerHTML = `
+        <strong>${escapeHtml(item.node.title)}</strong><br/>
+        ${escapeHtml(item.node.relPath || item.node.path)}<br/>
+        ${escapeHtml((item.node.tags || []).join(', '))}<br/>
+        ${escapeHtml(item.node.excerpt || '')}
+      `;
+    }
+
+    graphCanvas.addEventListener('mousemove', event => {
+      const rect = graphCanvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const item = graphNodeAt(x, y);
+      state.hoveredId = item ? item.id : null;
+      showTooltip(item, x, y);
+    });
+
+    graphCanvas.addEventListener('mouseleave', () => {
+      state.hoveredId = null;
+      tooltip.style.display = 'none';
+    });
+
+    graphCanvas.addEventListener('click', event => {
+      const rect = graphCanvas.getBoundingClientRect();
+      const item = graphNodeAt(event.clientX - rect.left, event.clientY - rect.top);
+      if (item) {
+        state.selectedId = item.id;
+        postMessage({ type: 'open', path: item.node.path });
+      }
+    });
+
+    function setView(view) {
+      state.view = view;
+      for (const tab of document.querySelectorAll('.tab')) {
+        tab.classList.toggle('active', tab.dataset.view === view);
+      }
+      for (const panel of document.querySelectorAll('.panel')) {
+        panel.classList.remove('active');
+      }
+      document.getElementById(`${view}Panel`).classList.add('active');
+      if (view === 'graph') {
+        buildGraphData();
+        resizeCanvas();
+      }
+    }
+
+    function renderAll() {
+      document.getElementById('vaultLabel').textContent = state.index.vault || 'Typora vault manager';
+      document.getElementById('statsLabel').textContent = `${state.index.nodes.length} notes · ${(state.index.edges || []).length} links`;
+      renderFilters();
+      renderBrowse();
+      renderSearch();
+      renderRecent();
+      if (state.view === 'graph') {
+        buildGraphData();
+        resizeCanvas();
+      }
+    }
+
+    window.setNotesIndex = function(index) {
+      state.index = index || state.index;
+      renderAll();
+    };
+
+    window.focusNotes = function() {
+      document.getElementById('searchInput').focus();
+    };
+
+    for (const tab of document.querySelectorAll('.tab')) {
+      tab.addEventListener('click', () => setView(tab.dataset.view));
+    }
+
+    document.getElementById('graphMode').addEventListener('change', event => {
+      state.graphMode = event.target.value;
+      buildGraphData();
+    });
+
+    document.getElementById('searchInput').addEventListener('input', event => {
+      state.searchQuery = event.target.value;
+      renderSearch();
+      if (state.view !== 'search' && state.searchQuery) {
+        setView('search');
+      }
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      postMessage({ type: 'refresh' });
+    });
+
+    document.getElementById('newDailyBtn').addEventListener('click', () => {
+      postMessage({ type: 'newDaily' });
+    });
+
+  document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        postMessage({ type: 'close' });
+      }
+    });
+
+    window.addEventListener('resize', resizeCanvas);
+    requestAnimationFrame(stepSimulation);
+    renderAll();
+  </script>
+</body>
+</html>

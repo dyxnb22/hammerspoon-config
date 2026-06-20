@@ -3,4 +3,5 @@ return {
   clipboard = true,
   translate = true,
   todo = true,
+  notes = true,
 }

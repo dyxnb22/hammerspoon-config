@@ -28,15 +28,18 @@ The architecture favors:
 - Shared helpers belong in `modules/helpers.lua`
 - Paths, hotkeys, and frame constants belong in `modules/config.lua`
 - Launcher UI structure belongs in `assets/launcher.html`
+- Notes Center UI structure belongs in `assets/notes.html`
+- Shared webview lifecycle belongs in `modules/webview_panel.lua`
 - Personal state should not be committed
 
-## Why Webview For Launcher
+## Why Webview For Launcher And Notes
 
-The launcher uses `hs.webview` instead of `hs.chooser` because:
+The launcher and notes center use `hs.webview` instead of `hs.chooser` because:
 
 - It allows a more polished macOS/iOS-style UI
 - It keeps layout and styling editable as frontend-like assets
 - It makes future UI extensions much easier
+- JavaScript can post messages back to Lua through `message.body`
 
 ## Change Strategy
 

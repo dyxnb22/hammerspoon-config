@@ -1,5 +1,17 @@
 require("hs.ipc")
 
+local function logStartup(message)
+  local file = io.open(os.getenv("HOME") .. "/.hammerspoon/startup.log", "a")
+  if not file then
+    return
+  end
+
+  file:write(os.date("%Y-%m-%d %H:%M:%S") .. " " .. message .. "\n")
+  file:close()
+end
+
+logStartup("init start")
+
 local config = require("config")
 local helpers = require("helpers")
 local moduleToggles = require("modules_enabled")
@@ -7,35 +19,178 @@ local launcher = require("launcher")(config, helpers)
 
 local loadedModules = {}
 local commandDefinitions = {}
+local loadErrors = {}
 
 local function moduleEnabled(name)
   return moduleToggles[name] ~= false
 end
 
-local function registerModule(name, factory)
+local function registerModule(name, moduleName)
   if not moduleEnabled(name) then
     return nil
   end
 
-  local instance = factory(config, helpers)
+  local ok, instance = xpcall(function()
+    return require(moduleName)(config, helpers)
+  end, debug.traceback)
+
+  if not ok then
+    loadErrors[name] = instance
+    logStartup("module failed: " .. name)
+    hs.printf("Module %s failed to load: %s", name, instance)
+    return nil
+  end
+
   loadedModules[name] = instance
   return instance
 end
 
-local windows = registerModule("windows", require("windows"))
-local clipboard = registerModule("clipboard", require("clipboard"))
-local translate = registerModule("translate", require("translate"))
-local todo = registerModule("todo", require("todo"))
+local function addCommand(command)
+  table.insert(commandDefinitions, command)
+end
+
+local function launcherAccentForIndex(index)
+  local accents = {
+    "blue",
+    "indigo",
+    "teal",
+    "green",
+    "orange",
+    "pink",
+  }
+
+  return accents[((index - 1) % #accents) + 1]
+end
+
+local function makeLauncherItem(actionId, kind, title, subtitle, badge, accent)
+  return {
+    id = actionId,
+    kind = kind,
+    title = title,
+    subtitle = subtitle,
+    badge = badge,
+    accent = accent,
+  }
+end
+
+local function buildLauncherState()
+  local items = {}
+  local actions = {}
+  local index = 0
+  local windows = loadedModules.windows
+
+  for _, command in ipairs(commandDefinitions) do
+    local actionId = "command-" .. command.id
+    index = index + 1
+    actions[actionId] = command.run
+
+    table.insert(items, makeLauncherItem(
+      actionId,
+      "command",
+      command.text,
+      command.subText,
+      "Command",
+      launcherAccentForIndex(index)
+    ))
+  end
+
+  if windows then
+    for _, window in ipairs(windows.orderedWindows()) do
+      local app = window:application()
+      local appName = app and app:name() or "Unknown App"
+      local actionId = "window-" .. tostring(index + 1)
+      index = index + 1
+
+      actions[actionId] = function()
+        window:focus()
+      end
+
+      table.insert(items, makeLauncherItem(
+        actionId,
+        "window",
+        window:title(),
+        appName,
+        "Recent Window",
+        launcherAccentForIndex(index)
+      ))
+    end
+
+    for _, app in ipairs(windows.recentAppsFromWindows()) do
+      local actionId = "app-" .. tostring(index + 1)
+      index = index + 1
+
+      actions[actionId] = function()
+        app:activate()
+      end
+
+      table.insert(items, makeLauncherItem(
+        actionId,
+        "app",
+        app:name(),
+        "Switch to app",
+        "Recent App",
+        launcherAccentForIndex(index)
+      ))
+    end
+  end
+
+  return items, actions
+end
+
+local function toggleLauncher()
+  local items, actions = buildLauncherState()
+  launcher.toggle(items, actions)
+end
+
+local function bindLauncherHotkeys()
+  hs.hotkey.bind(config.entryHotkey.modifiers, config.entryHotkey.key, toggleLauncher)
+
+  if config.launcherFallbackHotkey then
+    hs.hotkey.bind(
+      config.launcherFallbackHotkey.modifiers,
+      config.launcherFallbackHotkey.key,
+      toggleLauncher
+    )
+  end
+end
+
+bindLauncherHotkeys()
+
+local menuBarOk = xpcall(function()
+  local menubar = require("hs.menubar")
+  local menuBar = menubar.new()
+  if not menuBar then
+    return
+  end
+
+  menuBar:setTitle("HS")
+  menuBar:setMenu(function()
+    return {
+      { title = "Open Launcher", fn = toggleLauncher },
+      { title = "Reload Config", fn = hs.reload },
+      { title = "-" },
+      { title = "Open Config Folder", fn = function()
+        hs.execute("open " .. hs.configdir)
+      end },
+    }
+  end)
+end, debug.traceback)
+
+if not menuBarOk then
+  loadErrors.menubar = true
+end
+
+local windows = registerModule("windows", "windows")
+local clipboard = registerModule("clipboard", "clipboard")
+local translate = registerModule("translate", "translate")
+local todo = registerModule("todo", "todo")
+local notes = registerModule("notes", "notes")
 
 if clipboard and clipboard.start then
   clipboard.start()
 end
 
 math.randomseed(os.time())
-
-local function addCommand(command)
-  table.insert(commandDefinitions, command)
-end
 
 if translate then
   addCommand({
@@ -136,99 +291,33 @@ if todo then
   })
 end
 
-local function launcherAccentForIndex(index)
-  local accents = {
-    "blue",
-    "indigo",
-    "teal",
-    "green",
-    "orange",
-    "pink",
-  }
-
-  return accents[((index - 1) % #accents) + 1]
+if notes then
+  addCommand({
+    id = "notes",
+    text = "Notes Center",
+    subText = "Browse vault, graph links, and open in Typora",
+    keywords = "notes typora markdown vault graph",
+    run = notes.openCenter,
+  })
+  addCommand({
+    id = "notes-recent",
+    text = "Recent Notes",
+    subText = "Open a recently edited markdown note",
+    keywords = "notes recent typora markdown",
+    run = notes.openRecentChooser,
+  })
+  addCommand({
+    id = "notes-daily",
+    text = "New Daily Note",
+    subText = "Create or open today's journal note",
+    keywords = "notes daily journal today typora",
+    run = function()
+      local path = notes.newDailyNote()
+      notes.openInTypora(path)
+    end,
+  })
 end
 
-local function makeLauncherItem(actionId, kind, title, subtitle, badge, accent)
-  return {
-    id = actionId,
-    kind = kind,
-    title = title,
-    subtitle = subtitle,
-    badge = badge,
-    accent = accent,
-  }
-end
-
-local function buildLauncherState()
-  local items = {}
-  local actions = {}
-  local index = 0
-
-  if windows then
-    for _, window in ipairs(windows.orderedWindows()) do
-      local app = window:application()
-      local appName = app and app:name() or "Unknown App"
-      local actionId = "window-" .. tostring(index + 1)
-      index = index + 1
-
-      actions[actionId] = function()
-        window:focus()
-      end
-
-      table.insert(items, makeLauncherItem(
-        actionId,
-        "window",
-        window:title(),
-        appName,
-        "Recent Window",
-        launcherAccentForIndex(index)
-      ))
-    end
-
-    for _, app in ipairs(windows.recentAppsFromWindows()) do
-      local actionId = "app-" .. tostring(index + 1)
-      index = index + 1
-
-      actions[actionId] = function()
-        app:activate()
-      end
-
-      table.insert(items, makeLauncherItem(
-        actionId,
-        "app",
-        app:name(),
-        "Switch to app",
-        "Recent App",
-        launcherAccentForIndex(index)
-      ))
-    end
-  end
-
-  for _, command in ipairs(commandDefinitions) do
-    local actionId = "command-" .. command.id
-    index = index + 1
-    actions[actionId] = command.run
-
-    table.insert(items, makeLauncherItem(
-      actionId,
-      "command",
-      command.text,
-      command.subText,
-      "Command",
-      launcherAccentForIndex(index)
-    ))
-  end
-
-  return items, actions
-end
-
-local function toggleLauncher()
-  local items, actions = buildLauncherState()
-  launcher.toggle(items, actions)
-end
-
-hs.hotkey.bind(config.entryHotkey.modifiers, config.entryHotkey.key, toggleLauncher)
 hs.hotkey.bind(config.hyper, "R", function()
   hs.reload()
 end)
@@ -266,7 +355,17 @@ if translate then
   hs.hotkey.bind(config.hyper, "G", translate.prompt)
 end
 
-if not hs.accessibilityState() then
+if notes then
+  xpcall(function()
+    notes.bindHotkeys()
+  end, debug.traceback)
+end
+
+logStartup("config loaded")
+
+if next(loadErrors) then
+  hs.alert.show("Hammerspoon loaded with module errors")
+elseif not hs.accessibilityState() then
   hs.alert.show("Enable Hammerspoon in Accessibility")
 else
   hs.alert.show("Hammerspoon ready: Cmd+Shift+Space")
