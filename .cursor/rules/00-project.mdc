@@ -1,0 +1,21 @@
+---
+description: Core project rules for this Hammerspoon config repository
+alwaysApply: true
+---
+
+# Project Rules
+
+- This repository is the source of truth for the Hammerspoon setup.
+- Keep source code in `/Users/diaoyuxuan/hammerspoon-config`.
+- Do not write new feature logic into `~/.hammerspoon/init.lua`; that file is only a bootstrap.
+- Keep runtime state such as TODO data outside Git.
+- Prefer small, focused modules under `modules/`.
+- Update docs when behavior, module boundaries, hotkeys, or architecture change.
+- When adding a standalone feature, prefer a new module plus a toggle in `modules/modules_enabled.lua`.
+- Keep paths and constants centralized in `modules/config.lua`.
+
+# Working Style
+
+- Make changes that are easy for a solo developer to understand later.
+- Optimize for maintainability and low surprise.
+- Preserve the existing macOS/iOS-style launcher direction unless explicitly asked to redesign it.

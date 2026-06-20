@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: rgba(248, 249, 252, 0.78);
+      --panel: rgba(255, 255, 255, 0.70);
+      --panel-border: rgba(255, 255, 255, 0.56);
+      --text: #111827;
+      --muted: #667085;
+      --hairline: rgba(15, 23, 42, 0.08);
+      --shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
+      --input: rgba(255, 255, 255, 0.72);
+      --selected: rgba(255, 255, 255, 0.92);
+      --blue: linear-gradient(135deg, #5ea8ff 0%, #2b6ef2 100%);
+      --indigo: linear-gradient(135deg, #8f8bff 0%, #5661ff 100%);
+      --teal: linear-gradient(135deg, #4fd1c5 0%, #0f9d8f 100%);
+      --green: linear-gradient(135deg, #71dd8a 0%, #24995d 100%);
+      --orange: linear-gradient(135deg, #ffbe76 0%, #f08a24 100%);
+      --pink: linear-gradient(135deg, #ff9bc2 0%, #f15d8b 100%);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: rgba(12, 18, 28, 0.72);
+        --panel: rgba(18, 24, 36, 0.78);
+        --panel-border: rgba(255, 255, 255, 0.08);
+        --text: #f4f7fb;
+        --muted: #96a2b8;
+        --hairline: rgba(255, 255, 255, 0.08);
+        --shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+        --input: rgba(24, 31, 46, 0.82);
+        --selected: rgba(38, 47, 68, 0.95);
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+      background: transparent;
+      color: var(--text);
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      background:
+        radial-gradient(circle at top left, rgba(94, 168, 255, 0.16), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(94, 117, 255, 0.18), transparent 34%),
+        var(--bg);
+      backdrop-filter: blur(28px) saturate(140%);
+      -webkit-backdrop-filter: blur(28px) saturate(140%);
+    }
+
+    .shell {
+      width: min(920px, 100%);
+      height: min(680px, 100%);
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(28px) saturate(160%);
+      -webkit-backdrop-filter: blur(28px) saturate(160%);
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+    }
+
+    .hero {
+      padding: 28px 28px 12px;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 34px;
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      font-size: 15px;
+      color: var(--muted);
+    }
+
+    .searchWrap {
+      padding: 0 28px 18px;
+    }
+
+    .search {
+      width: 100%;
+      height: 58px;
+      border: 1px solid var(--hairline);
+      border-radius: 18px;
+      background: var(--input);
+      outline: none;
+      font-size: 22px;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      padding: 0 20px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+
+    .search::placeholder {
+      color: color-mix(in srgb, var(--muted) 80%, transparent);
+    }
+
+    .grid {
+      padding: 0 22px 18px;
+      overflow: auto;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      align-content: start;
+    }
+
+    .card {
+      position: relative;
+      border-radius: 24px;
+      border: 1px solid transparent;
+      background: rgba(255, 255, 255, 0.16);
+      padding: 16px 16px 16px 78px;
+      min-height: 96px;
+      cursor: pointer;
+      transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+    }
+
+    .card:hover,
+    .card.active {
+      transform: translateY(-1px) scale(1.01);
+      background: var(--selected);
+      border-color: var(--hairline);
+      box-shadow: 0 16px 28px rgba(15, 23, 42, 0.12);
+    }
+
+    .icon {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.14);
+    }
+
+    .icon.blue { background: var(--blue); }
+    .icon.indigo { background: var(--indigo); }
+    .icon.teal { background: var(--teal); }
+    .icon.green { background: var(--green); }
+    .icon.orange { background: var(--orange); }
+    .icon.pink { background: var(--pink); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.44);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .cardTitle {
+      font-size: 18px;
+      line-height: 1.2;
+      font-weight: 650;
+      letter-spacing: -0.03em;
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+
+    .cardSubtitle {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .empty {
+      grid-column: 1 / -1;
+      border-radius: 24px;
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px dashed var(--hairline);
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      border-top: 1px solid var(--hairline);
+      padding: 16px 24px 18px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .keys {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .key {
+      padding: 7px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--hairline);
+      background: rgba(255, 255, 255, 0.18);
+      min-width: 34px;
+      text-align: center;
+      color: var(--text);
+    }
+
+    @media (max-width: 760px) {
+      .shell {
+        height: min(760px, 100%);
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .title {
+        font-size: 28px;
+      }
+
+      .search {
+        font-size: 19px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="hero">
+      <div class="eyebrow">Launcher</div>
+      <h1 class="title">Focus what you need now</h1>
+      <div class="subtitle">Recent windows first, then apps, then your utility commands.</div>
+    </div>
+    <div class="searchWrap">
+      <input id="search" class="search" type="text" placeholder="Search windows, apps, commands..." autocomplete="off" />
+    </div>
+    <div id="grid" class="grid"></div>
+    <div class="footer">
+      <div class="keys">
+        <div class="key">↑</div>
+        <div class="key">↓</div>
+        <div class="key">←</div>
+        <div class="key">→</div>
+        <div class="key">Enter</div>
+        <div class="key">Esc</div>
+      </div>
+      <div>Hammerspoon launcher</div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      allItems: [],
+      items: [],
+      activeIndex: 0,
+    };
+
+    const icons = {
+      window: '◫',
+      app: '◎',
+      command: '⌘',
+    };
+
+    const search = document.getElementById('search');
+    const grid = document.getElementById('grid');
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function score(item, query) {
+      if (!query) return 1000 - item.rank;
+      const q = query.toLowerCase();
+      const title = item.title.toLowerCase();
+      const subtitle = (item.subtitle || '').toLowerCase();
+      const badge = (item.badge || '').toLowerCase();
+
+      if (title.startsWith(q)) return 3000 - item.rank;
+      if (title.includes(q)) return 2000 - item.rank;
+      if (subtitle.includes(q) || badge.includes(q)) return 1000 - item.rank;
+      return -1;
+    }
+
+    function render() {
+      if (state.items.length === 0) {
+        grid.innerHTML = '<div class="empty">No matches yet. Try another keyword.</div>';
+        return;
+      }
+
+      grid.innerHTML = state.items.map((item, index) => {
+        const active = index === state.activeIndex ? ' active' : '';
+        return `
+          <div class="card${active}" data-id="${escapeHtml(item.id)}">
+            <div class="icon ${escapeHtml(item.accent)}">${icons[item.kind] || '•'}</div>
+            <div class="badge">${escapeHtml(item.badge)}</div>
+            <div class="cardTitle">${escapeHtml(item.title)}</div>
+            <div class="cardSubtitle">${escapeHtml(item.subtitle || '')}</div>
+          </div>
+        `;
+      }).join('');
+
+      for (const node of grid.querySelectorAll('.card')) {
+        node.addEventListener('click', () => runItem(node.dataset.id));
+      }
+
+      const activeCard = grid.querySelector('.card.active');
+      if (activeCard) {
+        activeCard.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      }
+    }
+
+    function filterItems() {
+      const query = search.value.trim().toLowerCase();
+      state.items = state.allItems
+        .map(item => ({ item, score: score(item, query) }))
+        .filter(entry => entry.score >= 0)
+        .sort((a, b) => b.score - a.score)
+        .map(entry => entry.item);
+
+      if (state.activeIndex >= state.items.length) state.activeIndex = 0;
+      render();
+    }
+
+    function runItem(id) {
+      try {
+        webkit.messageHandlers.launcher.postMessage({ type: 'run', id });
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    function closeLauncher() {
+      try {
+        webkit.messageHandlers.launcher.postMessage({ type: 'close' });
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    function moveSelection(delta) {
+      if (state.items.length === 0) return;
+      const next = state.activeIndex + delta;
+      if (next < 0) {
+        state.activeIndex = state.items.length - 1;
+      } else if (next >= state.items.length) {
+        state.activeIndex = 0;
+      } else {
+        state.activeIndex = next;
+      }
+      render();
+    }
+
+    function moveGrid(delta) {
+      if (window.innerWidth <= 760) {
+        moveSelection(delta);
+        return;
+      }
+      moveSelection(delta * 2);
+    }
+
+    search.addEventListener('input', filterItems);
+    search.addEventListener('keydown', event => {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        moveSelection(1);
+      } else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+        event.preventDefault();
+        moveSelection(-1);
+      } else if (event.key === 'PageDown') {
+        event.preventDefault();
+        moveGrid(1);
+      } else if (event.key === 'PageUp') {
+        event.preventDefault();
+        moveGrid(-1);
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        const item = state.items[state.activeIndex];
+        if (item) runItem(item.id);
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        closeLauncher();
+      }
+    });
+
+    window.setLauncherItems = function(items) {
+      state.allItems = (items || []).map((item, index) => ({ ...item, rank: index }));
+      state.activeIndex = 0;
+      search.value = '';
+      filterItems();
+      search.focus();
+    };
+
+    window.focusLauncher = function() {
+      search.focus();
+      search.select();
+    };
+  </script>
+</body>
+</html>

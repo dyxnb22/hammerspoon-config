@@ -1,0 +1,18 @@
+---
+description: Cursor AI mode constraints and subagent policy
+alwaysApply: true
+---
+
+# Cursor AI Mode Rules
+
+- When using Composer 2.5, never use Fast mode.
+- This rule is mandatory.
+- The restriction is even stricter when using subagents.
+- If subagent work is needed, ensure the session is not in Fast mode before starting.
+- Do not suggest Fast mode as a shortcut for this repository.
+- If there is any ambiguity about the active mode, assume Fast mode is disallowed and continue with a non-Fast workflow.
+
+# Why
+
+- This repository contains local automation code and UI behavior where low-context or rushed edits are more likely to create subtle breakage.
+- Subagent work increases coordination complexity, so Fast mode is especially inappropriate there.

@@ -1,0 +1,22 @@
+---
+description: Implementation guidance for Hammerspoon modules, UI, and hotkeys
+alwaysApply: true
+---
+
+# Hammerspoon Implementation Rules
+
+- Prefer extending an existing module only when the new behavior clearly belongs there.
+- Otherwise create a new module under `modules/` and wire it through repo `init.lua`.
+- Module disablement must be safe: disabling a module should remove its commands and hotkeys cleanly.
+- Keep launcher action wiring in repo `init.lua` unless a clear abstraction improves maintainability.
+- Keep visual launcher changes inside `assets/launcher.html` whenever possible.
+- Keep keyboard navigation working after UI changes.
+- Preserve `Cmd + Shift + Space` as the launcher entry unless the user explicitly changes the requirement.
+- Avoid introducing new runtime persistence files into the repo.
+
+# Verification Expectations
+
+- After code changes, reload Hammerspoon.
+- Sanity check launcher open behavior.
+- Sanity check affected hotkeys or actions.
+- If a module was changed, verify its enable/disable path still behaves correctly.
