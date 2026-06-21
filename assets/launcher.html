@@ -1,38 +1,36 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
       color-scheme: light dark;
-      --shell-bg: rgba(246, 247, 251, 0.92);
-      --grid-bg: rgba(15, 23, 42, 0.06);
+      --shell-bg: rgba(246, 247, 251, 0.94);
       --card-bg: rgba(255, 255, 255, 0.88);
-      --card-bg-hover: rgba(255, 255, 255, 0.98);
+      --card-hover: rgba(255, 255, 255, 0.98);
       --text: #101828;
       --muted: #667085;
       --hairline: rgba(15, 23, 42, 0.08);
-      --search-bg: rgba(255, 255, 255, 0.72);
-      --accent: #2b6ef2;
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.12);
       --blue: linear-gradient(145deg, #7cc0ff 0%, #2b6ef2 100%);
-      --indigo: linear-gradient(145deg, #a7a3ff 0%, #5661ff 100%);
-      --teal: linear-gradient(145deg, #63e0d3 0%, #0f9d8f 100%);
-      --green: linear-gradient(145deg, #8ae9a2 0%, #24995d 100%);
-      --orange: linear-gradient(145deg, #ffd08a 0%, #f08a24 100%);
-      --pink: linear-gradient(145deg, #ffb3d2 0%, #f15d8b 100%);
+      --indigo: linear-gradient(145deg, #b1acff 0%, #6471ff 100%);
+      --teal: linear-gradient(145deg, #64ead6 0%, #0f9d8f 100%);
+      --green: linear-gradient(145deg, #9ceb96 0%, #299657 100%);
+      --orange: linear-gradient(145deg, #ffd890 0%, #ef8a24 100%);
+      --pink: linear-gradient(145deg, #ffb4d0 0%, #ec5b8f 100%);
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --shell-bg: rgba(16, 20, 30, 0.94);
-        --grid-bg: rgba(255, 255, 255, 0.05);
-        --card-bg: rgba(28, 34, 48, 0.92);
-        --card-bg-hover: rgba(36, 44, 62, 0.98);
+        --shell-bg: rgba(16, 19, 28, 0.94);
+        --card-bg: rgba(28, 34, 47, 0.92);
+        --card-hover: rgba(38, 46, 64, 0.98);
         --text: #f5f7fb;
-        --muted: #98a2b3;
-        --hairline: rgba(255, 255, 255, 0.07);
-        --search-bg: rgba(24, 30, 44, 0.88);
+        --muted: #95a0b7;
+        --hairline: rgba(255, 255, 255, 0.08);
+        --accent-soft: rgba(94, 168, 255, 0.18);
       }
     }
 
@@ -44,8 +42,8 @@
       height: 100%;
       overflow: hidden;
       background: transparent;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
       color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
     }
 
     .shell {
@@ -54,30 +52,19 @@
       border-radius: 28px;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto 1fr auto;
+      grid-template-rows: auto auto 1fr auto;
       background: var(--shell-bg);
       backdrop-filter: blur(40px) saturate(180%);
       -webkit-backdrop-filter: blur(40px) saturate(180%);
-      box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.35) inset,
-        0 24px 80px rgba(15, 23, 42, 0.22);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.2) inset, 0 24px 80px rgba(15,23,42,0.22);
     }
 
     .topbar {
-      padding: 18px 18px 14px;
-      display: grid;
-      gap: 12px;
-    }
-
-    .topRow {
+      padding: 18px 18px 10px;
       display: flex;
-      align-items: center;
       justify-content: space-between;
       gap: 12px;
-    }
-
-    .brand {
-      min-width: 0;
+      align-items: flex-start;
     }
 
     .eyebrow {
@@ -91,130 +78,126 @@
     .title {
       margin: 0;
       font-size: 24px;
-      line-height: 1.05;
       letter-spacing: -0.04em;
-      font-weight: 700;
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
     }
 
     .editBtn {
-      flex: 0 0 auto;
       border: none;
       border-radius: 999px;
-      padding: 10px 16px;
-      font-size: 14px;
-      font-weight: 600;
+      padding: 10px 14px;
+      background: var(--accent-soft);
       color: var(--accent);
-      background: rgba(43, 110, 242, 0.12);
+      font-weight: 600;
       cursor: pointer;
-      transition: transform 140ms ease, background 140ms ease;
+      flex: 0 0 auto;
     }
 
-    .editBtn:hover { background: rgba(43, 110, 242, 0.18); }
-    .editBtn:active { transform: scale(0.97); }
+    .toolbar {
+      padding: 0 18px 12px;
+      display: grid;
+      gap: 10px;
+    }
 
     .search {
       width: 100%;
-      height: 52px;
+      height: 48px;
+      border-radius: 14px;
       border: 1px solid var(--hairline);
-      border-radius: 16px;
-      background: var(--search-bg);
-      outline: none;
-      font-size: 18px;
-      letter-spacing: -0.03em;
+      background: rgba(255,255,255,0.55);
       color: var(--text);
-      padding: 0 16px;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+      padding: 0 14px;
+      font-size: 17px;
+      outline: none;
     }
 
-    .search::placeholder {
-      color: color-mix(in srgb, var(--muted) 82%, transparent);
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
-    .board {
+    .chip {
+      border: 1px solid var(--hairline);
+      background: rgba(255,255,255,0.18);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .chip.active,
+    .chip:focus-visible {
+      outline: none;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-color: rgba(37,99,235,0.2);
+    }
+
+    .list {
       min-height: 0;
       overflow: auto;
-      background: var(--grid-bg);
+      background: var(--hairline);
     }
 
-    .grid {
+    .row {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0;
-      min-height: 100%;
-    }
-
-    .card {
-      position: relative;
-      display: grid;
-      grid-template-columns: 58px 1fr;
+      grid-template-columns: 52px 1fr auto;
       gap: 12px;
       align-items: center;
-      min-height: 108px;
-      padding: 16px 16px 16px 14px;
-      background: var(--card-bg);
+      width: 100%;
+      min-height: 72px;
+      padding: 12px 16px;
       border: 0;
-      border-right: 1px solid var(--hairline);
       border-bottom: 1px solid var(--hairline);
+      background: var(--card-bg);
+      color: inherit;
+      text-align: left;
       cursor: pointer;
       user-select: none;
-      text-align: left;
-      transition: background 140ms ease, transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
     }
 
-    .card:nth-child(2n) { border-right: 0; }
+    .row:last-child { border-bottom: 0; }
 
-    .card:hover,
-    .card.active {
-      background: var(--card-bg-hover);
-      z-index: 1;
+    .row:hover,
+    .row.active {
+      background: var(--card-hover);
     }
 
-    .card:active:not(.editing),
-    .card.running {
-      transform: scale(0.985);
-    }
+    .row.running { transform: scale(0.995); }
+    .row.dragging { opacity: 0.35; }
+    .row.drag-over { box-shadow: inset 0 0 0 2px var(--accent); }
 
-    .card.dragging {
-      opacity: 0.42;
-      transform: scale(0.96);
-    }
-
-    .card.drag-over {
-      box-shadow: inset 0 0 0 2px var(--accent);
-      z-index: 2;
-    }
-
-    .shell.editing .card {
+    .shell.editing .row {
       cursor: grab;
+      animation: wiggle 0.28s ease-in-out infinite alternate;
     }
 
-    .shell.editing .card:nth-child(2n + 1) {
-      transform: rotate(-0.6deg);
-    }
+  .shell.editing .row:nth-child(2n) { animation-delay: 0.08s; }
 
-    .shell.editing .card:nth-child(2n) {
-      transform: rotate(0.6deg);
-    }
-
-    .shell.editing .card:active,
-    .shell.editing .card.dragging {
-      cursor: grabbing;
-      transform: scale(0.985);
+    @keyframes wiggle {
+      from { transform: rotate(-0.5deg); }
+      to { transform: rotate(0.5deg); }
     }
 
     .icon {
-      width: 52px;
-      height: 52px;
-      border-radius: 16px;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 700;
-      box-shadow:
-        0 10px 20px rgba(15, 23, 42, 0.16),
-        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+      box-shadow: 0 10px 20px rgba(15,23,42,0.14);
     }
 
     .icon.blue { background: var(--blue); }
@@ -224,53 +207,42 @@
     .icon.orange { background: var(--orange); }
     .icon.pink { background: var(--pink); }
 
-    .content { min-width: 0; }
+    .meta { min-width: 0; }
 
     .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.42);
-      border: 1px solid rgba(255, 255, 255, 0.24);
-      color: var(--muted);
+      display: inline-block;
+      margin-bottom: 4px;
       font-size: 10px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      margin-bottom: 8px;
+      color: var(--muted);
     }
 
-    .cardTitle {
-      font-size: 17px;
-      line-height: 1.18;
+    .rowTitle {
+      font-size: 16px;
       font-weight: 650;
       letter-spacing: -0.03em;
-      margin-bottom: 4px;
+      line-height: 1.2;
       word-break: break-word;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
     }
 
-    .cardSubtitle {
+    .rowSubtitle {
+      margin-top: 3px;
       font-size: 12px;
       color: var(--muted);
       line-height: 1.35;
       word-break: break-word;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+    }
+
+    .usage {
+      font-size: 11px;
+      color: var(--muted);
+      padding-left: 8px;
+      white-space: nowrap;
     }
 
     .empty {
-      grid-column: 1 / -1;
-      min-height: 220px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 28px;
+      padding: 40px 20px;
       text-align: center;
       color: var(--muted);
       background: var(--card-bg);
@@ -279,66 +251,54 @@
     .footer {
       display: flex;
       justify-content: space-between;
-      align-items: center;
       gap: 12px;
-      padding: 12px 16px 14px;
+      padding: 11px 16px 13px;
       border-top: 1px solid var(--hairline);
       color: var(--muted);
       font-size: 11px;
-      background: rgba(255, 255, 255, 0.18);
+      background: rgba(255,255,255,0.12);
     }
 
-    .keys {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
+    .keys { display: flex; gap: 6px; flex-wrap: wrap; }
 
     .key {
-      padding: 6px 8px;
-      border-radius: 10px;
+      min-width: 28px;
+      border-radius: 8px;
       border: 1px solid var(--hairline);
-      background: rgba(255, 255, 255, 0.18);
-      min-width: 30px;
+      padding: 5px 7px;
       text-align: center;
       color: var(--text);
-    }
-
-    @media (max-width: 720px) {
-      .grid { grid-template-columns: 1fr; }
-      .card { border-right: 0; }
-      .title { font-size: 21px; }
-      .search { font-size: 16px; }
+      background: rgba(255,255,255,0.16);
     }
   </style>
 </head>
 <body>
   <div id="shell" class="shell">
     <div class="topbar">
-      <div class="topRow">
-        <div class="brand">
-          <div class="eyebrow">Launcher</div>
-          <h1 class="title">Focus now</h1>
-        </div>
-        <button id="editBtn" class="editBtn" type="button">编辑</button>
+      <div>
+        <div id="eyebrow" class="eyebrow">Launcher</div>
+        <h1 id="title" class="title">Launcher</h1>
+        <div id="subtitle" class="subtitle"></div>
       </div>
-      <input id="search" class="search" type="search" placeholder="搜索窗口、应用、命令..." autocomplete="off" />
+      <button id="editBtn" class="editBtn" type="button">Edit</button>
     </div>
 
-    <div class="board">
-      <div id="grid" class="grid"></div>
+    <div class="toolbar">
+      <input id="search" class="search" type="search" autocomplete="off" />
+      <div id="chips" class="chips"></div>
     </div>
+
+    <div id="list" class="list"></div>
 
     <div class="footer">
       <div class="keys">
         <div class="key">↑</div>
         <div class="key">↓</div>
-        <div class="key">←</div>
-        <div class="key">→</div>
         <div class="key">Enter</div>
         <div class="key">Esc</div>
+        <div class="key">E</div>
       </div>
-      <div id="hint">点击卡片打开 · 长按或点编辑可排序</div>
+      <div id="hint"></div>
     </div>
   </div>
 
@@ -348,22 +308,25 @@
       items: [],
       activeIndex: 0,
       editing: false,
+      kindFilter: '',
+      chipIndex: 0,
       dragId: null,
       dragOverId: null,
       suppressClick: false,
+      strings: {},
     };
 
-    const icons = {
-      window: '◫',
-      app: '◎',
-      command: '⌘',
-    };
-
+    const icons = { window: '◫', app: '◎', command: '⌘' };
     const shell = document.getElementById('shell');
     const search = document.getElementById('search');
-    const grid = document.getElementById('grid');
+    const list = document.getElementById('list');
+    const chips = document.getElementById('chips');
     const editBtn = document.getElementById('editBtn');
     const hint = document.getElementById('hint');
+
+    function t(key, fallback) {
+      return state.strings[key] || fallback;
+    }
 
     function escapeHtml(value) {
       return String(value || '')
@@ -375,55 +338,97 @@
     }
 
     function postMessage(payload) {
-      try {
-        webkit.messageHandlers.launcher.postMessage(payload);
-      } catch (error) {
-        console.log(error);
-      }
+      try { webkit.messageHandlers.launcher.postMessage(payload); }
+      catch (error) { console.log(error); }
+    }
+
+    function normalizeSearchText(value) {
+      return String(value || '')
+        .toLowerCase()
+        .replace(/[._/-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
     }
 
     function score(item, query) {
       if (!query) return 1000 - item.rank;
-      const q = query.toLowerCase();
-      const title = item.title.toLowerCase();
-      const subtitle = (item.subtitle || '').toLowerCase();
-      const badge = (item.badge || '').toLowerCase();
+      const q = normalizeSearchText(query);
+      const title = normalizeSearchText(item.title);
+      const subtitle = normalizeSearchText(item.subtitle || '');
+      const badge = normalizeSearchText(item.badge || '');
+      const extra = normalizeSearchText(item.searchText || '');
+      const haystacks = [title, subtitle, badge, extra];
 
       if (title.startsWith(q)) return 3000 - item.rank;
       if (title.includes(q)) return 2000 - item.rank;
-      if (subtitle.includes(q) || badge.includes(q)) return 1000 - item.rank;
+      if (haystacks.some(text => text.includes(q))) return 1400 - item.rank;
+
+      const terms = q.split(' ').filter(Boolean);
+      if (terms.length > 1 && terms.every(term => haystacks.some(text => text.includes(term)))) {
+        return 1200 - item.rank;
+      }
+
       return -1;
     }
 
-    function persistLayout() {
-      postMessage({
-        type: 'saveLayout',
-        order: state.allItems.map(item => item.id),
-      });
+    function applyStrings(strings) {
+      state.strings = strings || {};
+      document.getElementById('eyebrow').textContent = t('title', 'Launcher');
+      document.getElementById('title').textContent = t('title', 'Launcher');
+      document.getElementById('subtitle').textContent = t('subtitle', '');
+      search.placeholder = t('searchPlaceholder', 'Search...');
+      editBtn.textContent = state.editing ? t('done', 'Done') : t('edit', 'Edit');
+      hint.textContent = t('hint', '');
+    }
+
+    function chipDefs() {
+      const counts = { window: 0, app: 0, command: 0 };
+      for (const item of state.allItems) counts[item.kind] = (counts[item.kind] || 0) + 1;
+      return [
+        { id: '', label: t('all', 'All'), count: state.allItems.length },
+        { id: 'command', label: t('command', 'Commands'), count: counts.command || 0 },
+        { id: 'window', label: t('window', 'Windows'), count: counts.window || 0 },
+        { id: 'app', label: t('app', 'Apps'), count: counts.app || 0 },
+      ];
+    }
+
+    function renderChips() {
+      const defs = chipDefs();
+      if (state.chipIndex >= defs.length) state.chipIndex = 0;
+      chips.innerHTML = defs.map((chip, index) => `
+        <button type="button" class="chip${state.kindFilter === chip.id ? ' active' : ''}"
+          data-kind="${escapeHtml(chip.id)}" data-index="${index}">
+          ${escapeHtml(chip.label)} · ${chip.count}
+        </button>
+      `).join('');
+
+      for (const chip of chips.querySelectorAll('.chip')) {
+        chip.addEventListener('click', () => {
+          state.kindFilter = chip.dataset.kind || '';
+          state.chipIndex = Number(chip.dataset.index || 0);
+          state.activeIndex = 0;
+          filterItems();
+        });
+      }
     }
 
     function setEditing(enabled) {
       state.editing = enabled;
       shell.classList.toggle('editing', enabled);
-      editBtn.textContent = enabled ? '完成' : '编辑';
-      hint.textContent = enabled
-        ? '拖拽卡片排序，完成后点「完成」'
-        : '点击卡片打开 · 长按或点编辑可排序';
+      editBtn.textContent = enabled ? t('done', 'Done') : t('edit', 'Edit');
       search.disabled = enabled;
-      if (!enabled) {
-        state.dragId = null;
-        state.dragOverId = null;
-      }
       render();
+    }
+
+    function persistLayout() {
+      postMessage({ type: 'saveLayout', order: state.allItems.map(item => item.id) });
     }
 
     function reorderItems(sourceId, targetId) {
       if (!sourceId || !targetId || sourceId === targetId) return;
-
       const fromIndex = state.allItems.findIndex(item => item.id === sourceId);
       const toIndex = state.allItems.findIndex(item => item.id === targetId);
       if (fromIndex < 0 || toIndex < 0) return;
-
       const [moved] = state.allItems.splice(fromIndex, 1);
       state.allItems.splice(toIndex, 0, moved);
       state.allItems.forEach((item, index) => { item.rank = index; });
@@ -432,134 +437,82 @@
     }
 
     function render() {
+      renderChips();
       if (state.items.length === 0) {
-        grid.innerHTML = '<div class="empty">没有匹配结果，换个关键词试试。</div>';
+        list.innerHTML = `<div class="empty">${escapeHtml(t('empty', 'No matches yet.'))}</div>`;
         return;
       }
 
-      grid.innerHTML = state.items.map((item, index) => {
-        const classes = ['card'];
+      list.innerHTML = state.items.map((item, index) => {
+        const classes = ['row'];
         if (index === state.activeIndex && !state.editing) classes.push('active');
-        if (state.editing) classes.push('editing');
         if (state.dragId === item.id) classes.push('dragging');
         if (state.dragOverId === item.id) classes.push('drag-over');
-
         return `
-          <button
-            class="${classes.join(' ')}"
-            type="button"
-            data-id="${escapeHtml(item.id)}"
-            draggable="${state.editing ? 'true' : 'false'}"
-          >
+          <button type="button" class="${classes.join(' ')}" data-id="${escapeHtml(item.id)}" draggable="${state.editing}">
             <div class="icon ${escapeHtml(item.accent)}">${icons[item.kind] || '•'}</div>
-            <div class="content">
+            <div class="meta">
               <div class="badge">${escapeHtml(item.badge)}</div>
-              <div class="cardTitle">${escapeHtml(item.title)}</div>
-              <div class="cardSubtitle">${escapeHtml(item.subtitle || '')}</div>
+              <div class="rowTitle">${escapeHtml(item.title)}</div>
+              <div class="rowSubtitle">${escapeHtml(item.subtitle || '')}</div>
             </div>
+            <div class="usage">${item.usageCount ? item.usageCount + 'x' : ''}</div>
           </button>
         `;
       }).join('');
 
-      for (const node of grid.querySelectorAll('.card')) {
-        let pressTimer = null;
-
-        node.addEventListener('mousedown', event => {
-          if (state.editing) return;
-          node.classList.add('running');
-        });
-
-        node.addEventListener('mouseup', () => node.classList.remove('running'));
-        node.addEventListener('mouseleave', () => node.classList.remove('running'));
-
-        node.addEventListener('click', event => {
+      for (const row of list.querySelectorAll('.row')) {
+        row.addEventListener('click', event => {
           if (state.suppressClick || state.editing) {
             event.preventDefault();
             return;
           }
-          runItem(node.dataset.id);
+          const index = state.items.findIndex(item => item.id === row.dataset.id);
+          if (index >= 0) state.activeIndex = index;
+          runItem(row.dataset.id);
         });
 
-        node.addEventListener('mousedown', event => {
-          if (state.editing) return;
-          pressTimer = window.setTimeout(() => {
-            setEditing(true);
-          }, 520);
-        });
-
-        node.addEventListener('mouseup', () => {
-          if (pressTimer) window.clearTimeout(pressTimer);
-        });
-        node.addEventListener('mouseleave', () => {
-          if (pressTimer) window.clearTimeout(pressTimer);
-        });
-
-        node.addEventListener('dragstart', event => {
-          if (!state.editing) {
-            event.preventDefault();
-            return;
-          }
-          state.dragId = node.dataset.id;
+        row.addEventListener('dragstart', event => {
+          if (!state.editing) { event.preventDefault(); return; }
+          state.dragId = row.dataset.id;
           state.suppressClick = true;
-          event.dataTransfer.effectAllowed = 'move';
-          event.dataTransfer.setData('text/plain', node.dataset.id);
-          render();
+          event.dataTransfer.setData('text/plain', row.dataset.id);
+          row.classList.add('dragging');
         });
 
-        node.addEventListener('dragend', () => {
-          state.dragId = null;
-          state.dragOverId = null;
-          window.setTimeout(() => { state.suppressClick = false; }, 0);
-          render();
-        });
-
-        node.addEventListener('dragover', event => {
-          if (!state.editing) return;
-          event.preventDefault();
-          state.dragOverId = node.dataset.id;
-          event.dataTransfer.dropEffect = 'move';
-          for (const card of grid.querySelectorAll('.card')) {
-            card.classList.toggle('drag-over', card.dataset.id === state.dragOverId);
-          }
-        });
-
-        node.addEventListener('dragleave', () => {
-          if (state.dragOverId === node.dataset.id) {
-            state.dragOverId = null;
-            node.classList.remove('drag-over');
-          }
-        });
-
-        node.addEventListener('drop', event => {
-          if (!state.editing) return;
-          event.preventDefault();
-          const sourceId = event.dataTransfer.getData('text/plain') || state.dragId;
-          reorderItems(sourceId, node.dataset.id);
+        row.addEventListener('dragend', () => {
           state.dragId = null;
           state.dragOverId = null;
           state.suppressClick = false;
+          render();
+        });
+
+        row.addEventListener('dragover', event => {
+          if (!state.editing) return;
+          event.preventDefault();
+          state.dragOverId = row.dataset.id;
+          row.classList.add('drag-over');
+        });
+
+        row.addEventListener('drop', event => {
+          if (!state.editing) return;
+          event.preventDefault();
+          reorderItems(event.dataTransfer.getData('text/plain'), row.dataset.id);
         });
       }
 
-      const activeCard = grid.querySelector('.card.active');
-      if (activeCard) {
-        activeCard.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-      }
+      const activeRow = list.querySelector('.row.active');
+      if (activeRow) activeRow.scrollIntoView({ block: 'nearest' });
     }
 
     function filterItems() {
       const query = search.value.trim().toLowerCase();
-
-      if (state.editing || !query) {
-        state.items = [...state.allItems];
-      } else {
-        state.items = state.allItems
-          .map(item => ({ item, score: score(item, query) }))
-          .filter(entry => entry.score >= 0)
-          .sort((a, b) => b.score - a.score)
-          .map(entry => entry.item);
-      }
-
+      state.items = state.allItems
+        .filter(item => !state.kindFilter || item.kind === state.kindFilter)
+        .map(item => ({ item, score: score(item, query) }))
+        .filter(entry => entry.score >= 0)
+        .sort((a, b) => b.score - a.score)
+        .map(entry => entry.item);
       if (state.activeIndex >= state.items.length) state.activeIndex = 0;
       render();
     }
@@ -570,74 +523,88 @@
     }
 
     function closeLauncher() {
-      if (state.editing) {
-        setEditing(false);
-        return;
-      }
+      if (state.editing) { setEditing(false); return; }
       postMessage({ type: 'close' });
     }
 
     function moveSelection(delta) {
-      if (state.items.length === 0 || state.editing) return;
+      if (!state.items.length || state.editing) return;
       const next = state.activeIndex + delta;
-      if (next < 0) {
-        state.activeIndex = state.items.length - 1;
-      } else if (next >= state.items.length) {
-        state.activeIndex = 0;
-      } else {
-        state.activeIndex = next;
-      }
+      if (next < 0) state.activeIndex = state.items.length - 1;
+      else if (next >= state.items.length) state.activeIndex = 0;
+      else state.activeIndex = next;
       render();
     }
 
-    function moveGrid(delta) {
-      if (window.innerWidth <= 720) {
-        moveSelection(delta);
-        return;
-      }
-      moveSelection(delta * 2);
+    function moveChip(delta) {
+      const defs = chipDefs();
+      state.chipIndex = (state.chipIndex + delta + defs.length) % defs.length;
+      state.kindFilter = defs[state.chipIndex].id;
+      state.activeIndex = 0;
+      filterItems();
+      const chip = chips.querySelector(`[data-index="${state.chipIndex}"]`);
+      if (chip) chip.focus();
     }
 
     editBtn.addEventListener('click', () => {
       setEditing(!state.editing);
-      if (!state.editing) {
-        search.focus();
+      if (!state.editing) search.focus();
+    });
+
+    search.addEventListener('input', () => { state.activeIndex = 0; filterItems(); });
+
+    document.addEventListener('keydown', event => {
+      if (event.target === search && ['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) return;
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeLauncher();
+      } else if (event.key === 'e' && !state.editing && document.activeElement !== search) {
+        event.preventDefault();
+        setEditing(true);
+      } else if (event.key === 'Enter' && !state.editing) {
+        const item = state.items[state.activeIndex];
+        if (item) { event.preventDefault(); runItem(item.id); }
+      } else if (event.key === 'ArrowDown' && !state.editing) {
+        event.preventDefault();
+        moveSelection(1);
+      } else if (event.key === 'ArrowUp' && !state.editing) {
+        event.preventDefault();
+        moveSelection(-1);
+      } else if (event.key === 'Tab' && event.shiftKey) {
+        event.preventDefault();
+        moveChip(-1);
+      } else if (event.key === 'Tab') {
+        event.preventDefault();
+        moveChip(1);
       }
     });
 
-    search.addEventListener('input', filterItems);
     search.addEventListener('keydown', event => {
-      if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
-        event.preventDefault();
-        moveSelection(1);
-      } else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
-        event.preventDefault();
-        moveSelection(-1);
-      } else if (event.key === 'PageDown') {
-        event.preventDefault();
-        moveGrid(1);
-      } else if (event.key === 'PageUp') {
-        event.preventDefault();
-        moveGrid(-1);
-      } else if (event.key === 'Enter') {
+      if (event.key === 'ArrowDown') { event.preventDefault(); moveSelection(1); }
+      else if (event.key === 'ArrowUp') { event.preventDefault(); moveSelection(-1); }
+      else if (event.key === 'Enter') {
         event.preventDefault();
         const item = state.items[state.activeIndex];
         if (item) runItem(item.id);
       } else if (event.key === 'Escape') {
         event.preventDefault();
+        event.stopPropagation();
         closeLauncher();
       }
     });
 
     window.setLauncherState = function(payload) {
-      const items = (payload && payload.items) || [];
-      state.allItems = items.map((item, index) => ({ ...item, rank: index }));
+      payload = payload || {};
+      state.allItems = (payload.items || []).map((item, index) => ({ ...item, rank: index }));
       state.activeIndex = 0;
       state.editing = false;
+      state.kindFilter = '';
+      state.chipIndex = 0;
       shell.classList.remove('editing');
-      editBtn.textContent = '编辑';
       search.value = '';
       search.disabled = false;
+      applyStrings(payload.strings || {});
       filterItems();
     };
 
@@ -646,10 +613,7 @@
     };
 
     window.focusLauncher = function() {
-      if (!state.editing) {
-        search.focus();
-        search.select();
-      }
+      if (!state.editing) { search.focus(); search.select(); }
     };
   </script>
 </body>

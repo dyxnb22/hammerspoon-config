@@ -1,52 +1,14 @@
 return function(config, helpers)
-  local createPanel = require("webview_panel")(config, helpers)
-  local settings = hs.settings
-  local layoutKey = "launcherCardOrder"
+  local webviewPanel = require("webview_panel")(config, helpers)
+  local runtime = require("launcher_runtime")(config, helpers)
 
-  local function loadLayoutOrder()
-    return settings.get(layoutKey) or {}
-  end
-
-  local function saveLayoutOrder(order)
-    if type(order) == "table" then
-      settings.set(layoutKey, order)
-    end
-  end
-
-  local function applyLayoutOrder(items)
-    local saved = loadLayoutOrder()
-    local lookup = {}
-
-    for _, item in ipairs(items or {}) do
-      lookup[item.id] = item
-    end
-
-    local ordered = {}
-    local seen = {}
-
-    for _, id in ipairs(saved) do
-      if lookup[id] then
-        table.insert(ordered, lookup[id])
-        seen[id] = true
-      end
-    end
-
-    for _, item in ipairs(items or {}) do
-      if not seen[item.id] then
-        table.insert(ordered, item)
-      end
-    end
-
-    return ordered
-  end
-
-  local panel = createPanel({
+  local panel = webviewPanel.create({
     channel = "launcher",
     htmlPath = config.assetsDir .. "/launcher.html",
     frame = function()
       local screen = hs.screen.mainScreen():frame()
-      local width = math.min(960, screen.w - 48)
-      local height = math.min(740, screen.h - 48)
+      local width = math.min(720, screen.w - 48)
+      local height = math.min(760, screen.h - 48)
 
       return {
         x = screen.x + math.floor((screen.w - width) / 2),
@@ -57,23 +19,50 @@ return function(config, helpers)
     end,
     onMessage = function(payload)
       if payload.type == "saveLayout" and payload.order then
-        saveLayoutOrder(payload.order)
+        runtime.saveLayout(payload.order)
       end
     end,
   })
 
   local M = {}
 
-  function M.toggle(items, actions)
+  local function wrapActions(actions)
+    local wrapped = {}
+
+    for id, action in pairs(actions or {}) do
+      wrapped[id] = function()
+        runtime.recordUsage(id)
+        action()
+      end
+    end
+
+    return wrapped
+  end
+
+  function M.toggle()
     local ok, err = pcall(function()
-      local orderedItems = applyLayoutOrder(items or {})
+      local items, actions = runtime.buildState()
       local payload = hs.json.encode({
-        items = orderedItems,
-        layout = loadLayoutOrder(),
+        items = items,
+        layout = runtime.layoutOrder(),
+        strings = {
+          title = "Launcher",
+          subtitle = "Search, launch, and reorder your workspace",
+          searchPlaceholder = "Search windows, apps, commands...",
+          edit = "Edit",
+          done = "Done",
+          all = "All",
+          window = "Windows",
+          app = "Apps",
+          command = "Commands",
+          empty = "No matches yet. Try another keyword.",
+          hint = "Enter to open · Esc to close · E to edit layout",
+          results = "results",
+        },
       })
 
       panel.toggle({
-        actions = actions or {},
+        actions = wrapActions(actions),
         eval = "window.setLauncherState(" .. payload .. "); window.focusLauncher();",
       })
     end)
@@ -82,6 +71,18 @@ return function(config, helpers)
       hs.alert.show("Launcher failed to open")
       hs.printf("launcher toggle error: %s", tostring(err))
     end
+  end
+
+  function M.registerRuntime(moduleMap)
+    runtime.registerModules(moduleMap)
+  end
+
+  function M.bindModuleHotkeys()
+    runtime.bindModuleHotkeys()
+  end
+
+  function M.menubarStatus()
+    return runtime.menubarStatus()
   end
 
   return M

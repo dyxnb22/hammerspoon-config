@@ -39,10 +39,17 @@ Responsibilities:
 
 Responsibilities:
 
-- Manage the `hs.webview` window
-- Load HTML asset
-- Bridge JavaScript actions back to Lua
-- Render launcher item state
+- Open/toggle the launcher webview
+- Wrap actions with usage tracking
+- Bridge layout save messages to runtime
+
+## launcher_runtime
+
+Responsibilities:
+
+- Build launcher items/actions from module registrations
+- Stable layout persistence and usage tracking
+- Short-lived cache for window/app snapshots
 
 ## webview_panel
 
@@ -50,7 +57,7 @@ Responsibilities:
 
 - Shared webview lifecycle for launcher and notes
 - Parse `message.body` from JavaScript callbacks
-- Show, hide, and evaluate JavaScript safely
+- Singleton panel instances per channel
 
 ## notes_scanner
 

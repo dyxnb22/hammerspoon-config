@@ -6,165 +6,353 @@
   <style>
     :root {
       color-scheme: light dark;
-      --bg: rgba(248, 249, 252, 0.82);
-      --panel: rgba(255, 255, 255, 0.74);
-      --panel-border: rgba(255, 255, 255, 0.56);
-      --text: #111827;
-      --muted: #667085;
+      --shell-bg: rgba(244, 246, 250, 0.92);
+      --shell-border: rgba(255, 255, 255, 0.54);
+      --panel-bg: rgba(255, 255, 255, 0.72);
+      --panel-strong: rgba(255, 255, 255, 0.9);
+      --surface: rgba(255, 255, 255, 0.56);
+      --surface-strong: rgba(255, 255, 255, 0.86);
+      --text: #0f1728;
+      --muted: #67748d;
       --hairline: rgba(15, 23, 42, 0.08);
-      --shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
-      --accent: #2b6ef2;
-      --accent-soft: rgba(43, 110, 242, 0.12);
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.13);
+      --shadow: 0 26px 72px rgba(15, 23, 42, 0.16);
+      --chip: rgba(255, 255, 255, 0.22);
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: rgba(12, 18, 28, 0.78);
-        --panel: rgba(18, 24, 36, 0.82);
-        --panel-border: rgba(255, 255, 255, 0.08);
-        --text: #f4f7fb;
-        --muted: #96a2b8;
+        --shell-bg: rgba(16, 19, 28, 0.94);
+        --shell-border: rgba(255, 255, 255, 0.08);
+        --panel-bg: rgba(24, 29, 41, 0.82);
+        --panel-strong: rgba(31, 38, 53, 0.94);
+        --surface: rgba(255, 255, 255, 0.06);
+        --surface-strong: rgba(255, 255, 255, 0.10);
+        --text: #f7f9fc;
+        --muted: #96a1b9;
         --hairline: rgba(255, 255, 255, 0.08);
-        --shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
-        --accent-soft: rgba(94, 168, 255, 0.16);
+        --accent-soft: rgba(94, 168, 255, 0.18);
+        --shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
+        --chip: rgba(255, 255, 255, 0.08);
       }
     }
 
     * { box-sizing: border-box; }
 
     html, body {
-      margin: 0;
       width: 100%;
       height: 100%;
+      margin: 0;
       overflow: hidden;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
       background: transparent;
       color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
     }
 
     body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
       background:
-        radial-gradient(circle at top left, rgba(94, 168, 255, 0.14), transparent 28%),
-        radial-gradient(circle at bottom right, rgba(94, 117, 255, 0.16), transparent 32%),
-        var(--bg);
-      backdrop-filter: blur(28px) saturate(140%);
-      -webkit-backdrop-filter: blur(28px) saturate(140%);
+        radial-gradient(circle at top left, rgba(99, 187, 255, 0.18), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(91, 111, 255, 0.18), transparent 34%),
+        transparent;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
     }
 
     .shell {
-      width: min(1140px, 100%);
-      height: min(780px, 100%);
-      border-radius: 28px;
-      overflow: hidden;
-      background: var(--panel);
-      border: 1px solid var(--panel-border);
-      box-shadow: var(--shadow);
+      width: 100%;
+      height: 100%;
       display: grid;
-      grid-template-rows: auto auto 1fr auto;
+      grid-template-rows: auto auto auto 1fr auto;
+      border-radius: 30px;
+      overflow: hidden;
+      background: var(--shell-bg);
+      border: 1px solid var(--shell-border);
+      backdrop-filter: blur(44px) saturate(180%);
+      -webkit-backdrop-filter: blur(44px) saturate(180%);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.16) inset,
+        0 32px 90px rgba(15, 23, 42, 0.24);
     }
 
     .hero {
       display: flex;
       justify-content: space-between;
       gap: 16px;
-      padding: 22px 24px 10px;
       align-items: flex-start;
+      padding: 22px 22px 12px;
+    }
+
+    .eyebrow {
+      margin-bottom: 6px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--muted);
     }
 
     .title {
       margin: 0;
       font-size: 28px;
-      letter-spacing: -0.04em;
+      line-height: 1.02;
+      letter-spacing: -0.05em;
     }
 
     .subtitle {
-      margin-top: 6px;
-      color: var(--muted);
+      margin-top: 8px;
       font-size: 13px;
+      color: var(--muted);
+      max-width: 560px;
+      line-height: 1.45;
     }
 
-    .actions {
+    .heroActions {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       flex-wrap: wrap;
       justify-content: flex-end;
     }
 
-    button, .tab {
+    .heroActions button,
+    .segmented button,
+    .toolbar button {
       border: 1px solid var(--hairline);
-      background: rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
       color: var(--text);
-      border-radius: 12px;
-      padding: 8px 12px;
-      font-size: 12px;
       cursor: pointer;
+      transition: background 140ms ease, transform 140ms ease, box-shadow 140ms ease;
     }
 
-    button:hover, .tab:hover, .tab.active {
-      background: var(--accent-soft);
-      border-color: rgba(43, 110, 242, 0.28);
+    .heroActions button {
+      height: 40px;
+      padding: 0 16px;
+    }
+
+    .heroActions button.primary {
+      background: linear-gradient(135deg, #4f8cff 0%, #2563eb 100%);
+      color: white;
+      border-color: transparent;
+    }
+
+    .heroActions button:hover,
+    .segmented button:hover,
+    .toolbar button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 26px rgba(15, 23, 42, 0.10);
     }
 
     .toolbar {
-      display: flex;
-      gap: 10px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 12px;
       align-items: center;
-      padding: 0 24px 14px;
+      padding: 0 22px 12px;
+    }
+
+    .segmented {
+      display: inline-flex;
+      gap: 8px;
+      padding: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid var(--hairline);
+    }
+
+    .segmented button {
+      height: 36px;
+      padding: 0 14px;
+      font-size: 12px;
+    }
+
+    .segmented button.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: rgba(37, 99, 235, 0.18);
+    }
+
+    .searchBar {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 170px;
+      gap: 10px;
+    }
+
+    .search,
+    .select {
+      width: 100%;
+      height: 46px;
+      border-radius: 16px;
+      border: 1px solid var(--hairline);
+      background: rgba(255, 255, 255, 0.54);
+      color: var(--text);
+      padding: 0 14px;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+
+    .statusRow {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 0 22px 14px;
       flex-wrap: wrap;
     }
 
-    .tabs {
+    .statusChips,
+    .metaChips {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
     }
 
-    .search {
-      flex: 1;
-      min-width: 220px;
-      height: 42px;
-      border-radius: 14px;
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--chip);
       border: 1px solid var(--hairline);
-      background: rgba(255, 255, 255, 0.18);
-      color: var(--text);
-      padding: 0 14px;
-      font-size: 15px;
-      outline: none;
     }
 
-    .content {
+    .chip strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .workspace {
       min-height: 0;
       display: grid;
-      grid-template-columns: 280px 1fr;
-      border-top: 1px solid var(--hairline);
+      grid-template-columns: 250px minmax(0, 1.1fr) minmax(300px, 0.9fr);
+      gap: 16px;
+      padding: 0 22px 18px;
+    }
+
+    .panel {
+      min-height: 0;
+      border-radius: 24px;
+      border: 1px solid var(--hairline);
+      background: var(--panel-bg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: grid;
     }
 
     .sidebar {
-      border-right: 1px solid var(--hairline);
+      grid-template-rows: auto 1fr;
+    }
+
+    .workspacePanel,
+    .inspector {
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .panelHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--hairline);
+      background: rgba(255, 255, 255, 0.10);
+    }
+
+    .panelTitle {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .panelMeta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .panelBody {
+      min-height: 0;
       overflow: auto;
       padding: 14px;
     }
 
-    .main {
-      min-width: 0;
+    .filterSection + .filterSection {
+      margin-top: 14px;
+    }
+
+    .sectionLabel {
+      margin-bottom: 8px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+    }
+
+    .filterList,
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .filterItem,
+    .item {
+      border: 1px solid transparent;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.10);
+      padding: 12px;
+      cursor: pointer;
+      transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+    }
+
+    .filterItem:hover,
+    .filterItem.active,
+    .item:hover,
+    .item.active {
+      background: rgba(255, 255, 255, 0.22);
+      border-color: rgba(37, 99, 235, 0.16);
+      transform: translateY(-1px);
+    }
+
+    .itemTitle {
+      margin-bottom: 5px;
+      font-size: 14px;
+      font-weight: 650;
+      word-break: break-word;
+    }
+
+    .itemMeta {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .tagRow {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .tag {
+      font-size: 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 4px 8px;
+    }
+
+    .workspaceCanvas {
       min-height: 0;
       position: relative;
       overflow: hidden;
-      background: rgba(255, 255, 255, 0.06);
-    }
-
-    .panel {
-      display: none;
-      width: 100%;
-      height: 100%;
-    }
-
-    .panel.active {
-      display: block;
     }
 
     #graphCanvas {
@@ -172,78 +360,31 @@
       height: 100%;
       display: block;
       cursor: grab;
+      background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.06), transparent 55%),
+        rgba(255, 255, 255, 0.04);
     }
 
-    .list {
+    #graphCanvas.dragging {
+      cursor: grabbing;
+    }
+
+    .graphOverlay {
+      position: absolute;
+      inset: 14px 14px auto auto;
       display: flex;
-      flex-direction: column;
       gap: 8px;
+      z-index: 2;
     }
 
-    .item {
-      border: 1px solid transparent;
-      border-radius: 14px;
-      padding: 10px 12px;
+    .graphOverlay button {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      border: 1px solid var(--hairline);
+      background: rgba(255, 255, 255, 0.66);
+      color: var(--text);
       cursor: pointer;
-      background: rgba(255, 255, 255, 0.10);
-    }
-
-    .item:hover, .item.active {
-      background: rgba(255, 255, 255, 0.22);
-      border-color: var(--hairline);
-    }
-
-    .itemTitle {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 4px;
-      word-break: break-word;
-    }
-
-    .itemMeta {
-      font-size: 11px;
-      color: var(--muted);
-      line-height: 1.35;
-      word-break: break-word;
-    }
-
-    .tagRow {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 6px;
-    }
-
-    .tag {
-      font-size: 10px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: var(--accent-soft);
-      color: var(--muted);
-    }
-
-    .sectionTitle {
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin: 10px 0 8px;
-    }
-
-    .empty {
-      padding: 28px;
-      text-align: center;
-      color: var(--muted);
-    }
-
-    .footer {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 20px 14px;
-      border-top: 1px solid var(--hairline);
-      color: var(--muted);
-      font-size: 12px;
     }
 
     .tooltip {
@@ -257,17 +398,164 @@
       color: #f8fafc;
       font-size: 12px;
       line-height: 1.4;
-      z-index: 20;
+      z-index: 5;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
     }
 
-    @media (max-width: 900px) {
-      .content {
+    .hidden {
+      display: none !important;
+    }
+
+    .empty {
+      min-height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+    }
+
+    .inspectorHero {
+      padding: 18px 16px 12px;
+      display: grid;
+      gap: 10px;
+      border-bottom: 1px solid var(--hairline);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .inspectorTitle {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.05;
+      letter-spacing: -0.05em;
+    }
+
+    .inspectorSubtitle {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .inspectorTags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .inspectorTag {
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--hairline);
+      background: rgba(255, 255, 255, 0.16);
+      color: var(--muted);
+    }
+
+    .inspectorBody {
+      min-height: 0;
+      overflow: auto;
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .cardSection {
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.10);
+      padding: 14px;
+    }
+
+    .cardSectionTitle {
+      margin-bottom: 8px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .inspectorFooter {
+      display: flex;
+      gap: 10px;
+      padding: 14px 16px 16px;
+      border-top: 1px solid var(--hairline);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .inspectorFooter button {
+      flex: 1;
+      height: 44px;
+      border-radius: 14px;
+      border: 1px solid var(--hairline);
+      cursor: pointer;
+    }
+
+    .inspectorFooter .primary {
+      background: linear-gradient(135deg, #4f8cff 0%, #2563eb 100%);
+      color: white;
+      border-color: transparent;
+    }
+
+    .inspectorFooter .secondary {
+      background: rgba(255, 255, 255, 0.18);
+      color: var(--text);
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px 14px;
+      border-top: 1px solid var(--hairline);
+      color: var(--muted);
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.10);
+    }
+
+    .keys {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .key {
+      min-width: 30px;
+      border-radius: 10px;
+      border: 1px solid var(--hairline);
+      padding: 6px 8px;
+      text-align: center;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    @media (max-width: 1180px) {
+      .workspace {
+        grid-template-columns: 220px minmax(0, 1fr);
+      }
+
+      .inspector {
+        grid-column: 1 / -1;
+        min-height: 320px;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .toolbar {
         grid-template-columns: 1fr;
       }
 
-      .sidebar {
-        display: none;
+      .searchBar {
+        grid-template-columns: 1fr;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -276,58 +564,113 @@
   <div class="shell">
     <div class="hero">
       <div>
+        <div class="eyebrow">Notes</div>
         <h1 class="title">Notes Center</h1>
-        <div class="subtitle" id="vaultLabel">Typora vault manager</div>
+        <div class="subtitle" id="vaultLabel">一个页面里完成浏览、搜索、图谱和预览。Esc 会先退出当前笔记，再返回主页。</div>
       </div>
-      <div class="actions">
-        <button id="newDailyBtn" type="button">New Today</button>
-        <button id="refreshBtn" type="button">Refresh Index</button>
+      <div class="heroActions">
+        <button id="backHomeBtn" type="button">返回主页</button>
+        <button id="refreshBtn" type="button">刷新索引</button>
+        <button id="newDailyBtn" class="primary" type="button">今日笔记</button>
       </div>
     </div>
 
     <div class="toolbar">
-      <div class="tabs">
+      <div class="segmented">
         <button class="tab active" data-view="graph" type="button">Graph</button>
         <button class="tab" data-view="browse" type="button">Browse</button>
         <button class="tab" data-view="search" type="button">Search</button>
         <button class="tab" data-view="recent" type="button">Recent</button>
       </div>
-      <select id="graphMode" class="search" style="max-width: 180px; height: 42px;">
-        <option value="links">Link Graph</option>
-        <option value="parent">Hierarchy</option>
-        <option value="tags">Tag Clusters</option>
-      </select>
-      <input id="searchInput" class="search" type="search" placeholder="Search title, path, tags, content..." />
+      <div class="searchBar">
+        <input id="searchInput" class="search" type="search" placeholder="搜索标题、路径、标签、内容..." />
+        <select id="graphMode" class="select">
+          <option value="links">链接图</option>
+          <option value="parent">层级图</option>
+          <option value="tags">标签团簇</option>
+        </select>
+      </div>
+      <div class="metaChips">
+        <span id="statsLabel" class="chip"><strong>0</strong> notes</span>
+        <span id="viewLabel" class="chip"><strong>Graph</strong> 当前视图</span>
+      </div>
     </div>
 
-    <div class="content">
-      <aside class="sidebar">
-        <div class="sectionTitle">Filters</div>
-        <div id="folderFilters" class="list"></div>
-        <div class="sectionTitle">Tags</div>
-        <div id="tagFilters" class="list"></div>
+    <div class="statusRow">
+      <div id="statusChips" class="statusChips"></div>
+      <button id="clearFiltersBtn" type="button" class="chip">清空筛选</button>
+    </div>
+
+    <div class="workspace">
+      <aside class="panel sidebar">
+        <div class="panelHeader">
+          <div class="panelTitle">Filters</div>
+          <div class="panelMeta">快速收束结果</div>
+        </div>
+        <div class="panelBody">
+          <div class="filterSection">
+            <div class="sectionLabel">Folders</div>
+            <div id="folderFilters" class="filterList"></div>
+          </div>
+          <div class="filterSection">
+            <div class="sectionLabel">Tags</div>
+            <div id="tagFilters" class="filterList"></div>
+          </div>
+        </div>
       </aside>
 
-      <main class="main">
-        <section id="graphPanel" class="panel active">
-          <canvas id="graphCanvas"></canvas>
-          <div id="graphTooltip" class="tooltip"></div>
-        </section>
-        <section id="browsePanel" class="panel">
-          <div id="browseList" class="list" style="padding: 16px; overflow: auto; height: 100%;"></div>
-        </section>
-        <section id="searchPanel" class="panel">
-          <div id="searchList" class="list" style="padding: 16px; overflow: auto; height: 100%;"></div>
-        </section>
-        <section id="recentPanel" class="panel">
-          <div id="recentList" class="list" style="padding: 16px; overflow: auto; height: 100%;"></div>
-        </section>
-      </main>
+      <section class="panel workspacePanel">
+        <div class="panelHeader">
+          <div>
+            <div class="panelTitle">Workspace</div>
+            <div id="panelMeta" class="panelMeta">图谱、列表和最近访问统一在这里</div>
+          </div>
+          <div id="panelHint" class="panelMeta">点击选中，回车或主按钮打开</div>
+        </div>
+        <div id="workspaceCanvas" class="workspaceCanvas">
+          <div id="graphView" class="panelBody">
+            <div style="position:relative; height:100%;">
+              <canvas id="graphCanvas"></canvas>
+              <div class="graphOverlay">
+                <button id="zoomOutBtn" type="button">−</button>
+                <button id="fitGraphBtn" type="button">⌂</button>
+                <button id="zoomInBtn" type="button">+</button>
+              </div>
+              <div id="graphTooltip" class="tooltip"></div>
+            </div>
+          </div>
+          <div id="listView" class="panelBody hidden">
+            <div id="resultsList" class="list"></div>
+          </div>
+        </div>
+        <div class="inspectorFooter">
+          <button id="openSelectedBtn" class="primary" type="button">打开选中笔记</button>
+          <button id="closeDetailBtn" class="secondary" type="button">退出当前笔记</button>
+        </div>
+      </section>
+
+      <aside class="panel inspector">
+        <div class="panelHeader">
+          <div class="panelTitle">Preview</div>
+          <div id="previewMeta" class="panelMeta">未选中笔记</div>
+        </div>
+        <div id="inspectorHero" class="inspectorHero"></div>
+        <div id="inspectorBody" class="inspectorBody"></div>
+        <div class="inspectorFooter">
+          <button id="previewOpenBtn" class="primary" type="button">在 Typora 中打开</button>
+          <button id="previewBackBtn" class="secondary" type="button">返回主页</button>
+        </div>
+      </aside>
     </div>
 
     <div class="footer">
-      <div>Click a node or note to open in Typora</div>
-      <div id="statsLabel">0 notes</div>
+      <div class="keys">
+        <div class="key">↑</div>
+        <div class="key">↓</div>
+        <div class="key">Enter</div>
+        <div class="key">Esc</div>
+      </div>
+      <div id="footerHint">Esc 先退出当前选中笔记，再返回 Launcher 主页</div>
     </div>
   </div>
 
@@ -345,15 +688,28 @@
       graphEdges: [],
       simNodes: [],
       hoveredId: null,
-      draggingId: null,
+      draggingNodeId: null,
+      draggingCanvas: false,
+      pointerMode: null,
+      lastPointer: { x: 0, y: 0 },
       panX: 0,
       panY: 0,
       scale: 1,
+      settledFrames: 0,
     };
 
     const graphCanvas = document.getElementById('graphCanvas');
     const graphCtx = graphCanvas.getContext('2d');
     const tooltip = document.getElementById('graphTooltip');
+    const resultsList = document.getElementById('resultsList');
+    const statsLabel = document.getElementById('statsLabel');
+    const viewLabel = document.getElementById('viewLabel');
+    const statusChips = document.getElementById('statusChips');
+    const panelMeta = document.getElementById('panelMeta');
+    const panelHint = document.getElementById('panelHint');
+    const previewMeta = document.getElementById('previewMeta');
+    const inspectorHero = document.getElementById('inspectorHero');
+    const inspectorBody = document.getElementById('inspectorBody');
 
     function postMessage(payload) {
       try {
@@ -378,10 +734,10 @@
     }
 
     function nodeById(id) {
-      return state.index.nodes.find(node => node.id === id);
+      return state.index.nodes.find(node => node.id === id) || null;
     }
 
-    function filteredNodes() {
+    function visibleNodes() {
       return state.index.nodes.filter(node => {
         if (state.folderFilter) {
           const nodeFolder = node.folder || state.rootFolderKey;
@@ -392,9 +748,29 @@
       });
     }
 
+    function currentListItems() {
+      const nodes = visibleNodes();
+      if (state.view === 'recent') {
+        const allowed = new Set(nodes.map(node => node.id));
+        return (state.index.recent || [])
+          .filter(item => allowed.has(item.id))
+          .map(item => nodeById(item.id) || item);
+      }
+
+      if (state.view === 'browse') {
+        return [...nodes].sort((a, b) => a.relPath.localeCompare(b.relPath));
+      }
+
+      const query = state.searchQuery.trim().toLowerCase();
+      return nodes
+        .map(node => ({ node, score: scoreNode(node, query) }))
+        .filter(entry => entry.score >= 0)
+        .sort((a, b) => b.score - a.score)
+        .map(entry => entry.node);
+    }
+
     function scoreNode(node, query) {
       if (!query) return 1;
-      const q = query.toLowerCase();
       const haystack = [
         node.title,
         node.relPath,
@@ -403,35 +779,63 @@
         node.excerpt,
       ].join(' ').toLowerCase();
 
-      if (node.title.toLowerCase().startsWith(q)) return 300;
-      if (node.title.toLowerCase().includes(q)) return 200;
-      if (haystack.includes(q)) return 100;
+      if ((node.title || '').toLowerCase().startsWith(query)) return 300;
+      if ((node.title || '').toLowerCase().includes(query)) return 200;
+      if (haystack.includes(query)) return 100;
       return -1;
     }
 
-    function renderItem(node, extra) {
-      const tags = (node.tags || []).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('');
-      return `
-        <div class="item" data-path="${escapeHtml(node.path)}">
-          <div class="itemTitle">${escapeHtml(node.title)}</div>
-          <div class="itemMeta">${escapeHtml(node.relPath || node.path)}</div>
-          <div class="itemMeta">${escapeHtml(formatTime(node.mtime))}${extra ? ' · ' + escapeHtml(extra) : ''}</div>
-          ${tags ? `<div class="tagRow">${tags}</div>` : ''}
-        </div>
-      `;
+    function selectNote(id, options = {}) {
+      const node = nodeById(id);
+      if (!node) return;
+      state.selectedId = id;
+      renderPreview();
+      if (options.focusGraph && state.view === 'graph') {
+        focusNode(id);
+      }
+      renderList();
     }
 
-    function bindListClicks(container) {
-      for (const node of container.querySelectorAll('.item')) {
-        node.addEventListener('click', () => {
-          postMessage({ type: 'open', path: node.dataset.path });
-        });
+    function clearSelection() {
+      state.selectedId = null;
+      renderPreview();
+      renderList();
+      drawGraph();
+    }
+
+    function openSelectedNote() {
+      const node = nodeById(state.selectedId);
+      if (!node) return;
+      postMessage({ type: 'open', path: node.path });
+    }
+
+    function backOrClose() {
+      if (state.selectedId) {
+        clearSelection();
+        return;
       }
+      postMessage({ type: 'home' });
+    }
+
+    function renderStatusChips() {
+      const chips = [];
+      chips.push(`<span class="chip"><strong>${state.index.nodes.length}</strong> 笔记</span>`);
+      chips.push(`<span class="chip"><strong>${(state.index.edges || []).length}</strong> 连接</span>`);
+      if (state.folderFilter) {
+        chips.push(`<span class="chip"><strong>Folder</strong> ${escapeHtml(state.folderFilter === state.rootFolderKey ? '(root)' : state.folderFilter)}</span>`);
+      }
+      if (state.tagFilter) {
+        chips.push(`<span class="chip"><strong>Tag</strong> ${escapeHtml(state.tagFilter)}</span>`);
+      }
+      if (state.searchQuery.trim()) {
+        chips.push(`<span class="chip"><strong>Search</strong> ${escapeHtml(state.searchQuery.trim())}</span>`);
+      }
+      statusChips.innerHTML = chips.join('');
     }
 
     function renderFilters() {
       const folders = new Set();
-      const tags = Object.keys(state.index.tags || {}).sort();
+      const tags = Object.keys(state.index.tags || {}).sort((a, b) => a.localeCompare(b));
 
       for (const node of state.index.nodes) {
         folders.add(node.folder || '(root)');
@@ -443,10 +847,10 @@
         const value = isRoot ? state.rootFolderKey : folder;
         const label = folder === '' ? 'All folders' : folder;
         const active = state.folderFilter === value ? ' active' : '';
-        return `<div class="item${active}" data-folder="${escapeHtml(value)}"><div class="itemTitle">${escapeHtml(label)}</div></div>`;
+        return `<button type="button" class="filterItem${active}" data-folder="${escapeHtml(value)}"><div class="itemTitle">${escapeHtml(label)}</div></button>`;
       }).join('');
 
-      for (const item of folderFilters.querySelectorAll('.item')) {
+      for (const item of folderFilters.querySelectorAll('.filterItem')) {
         item.addEventListener('click', () => {
           state.folderFilter = item.dataset.folder || '';
           renderAll();
@@ -457,10 +861,10 @@
       tagFilters.innerHTML = [''].concat(tags).map(tag => {
         const label = tag === '' ? 'All tags' : tag;
         const active = state.tagFilter === tag ? ' active' : '';
-        return `<div class="item${active}" data-tag="${escapeHtml(tag)}"><div class="itemTitle">${escapeHtml(label)}</div></div>`;
+        return `<button type="button" class="filterItem${active}" data-tag="${escapeHtml(tag)}"><div class="itemTitle">${escapeHtml(label)}</div></button>`;
       }).join('');
 
-      for (const item of tagFilters.querySelectorAll('.item')) {
+      for (const item of tagFilters.querySelectorAll('.filterItem')) {
         item.addEventListener('click', () => {
           state.tagFilter = item.dataset.tag || '';
           renderAll();
@@ -468,42 +872,115 @@
       }
     }
 
-    function renderBrowse() {
-      const list = document.getElementById('browseList');
-      const nodes = filteredNodes().sort((a, b) => a.relPath.localeCompare(b.relPath));
-      list.innerHTML = nodes.length
-        ? nodes.map(node => renderItem(node)).join('')
-        : '<div class="empty">No notes in this filter.</div>';
-      bindListClicks(list);
+    function renderItem(node, extra) {
+      const tags = (node.tags || []).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('');
+      const active = node.id === state.selectedId ? ' active' : '';
+      return `
+        <button type="button" class="item${active}" data-id="${escapeHtml(node.id)}">
+          <div class="itemTitle">${escapeHtml(node.title)}</div>
+          <div class="itemMeta">${escapeHtml(node.relPath || node.path)}</div>
+          <div class="itemMeta">${escapeHtml(formatTime(node.mtime))}${extra ? ` · ${escapeHtml(extra)}` : ''}</div>
+          ${tags ? `<div class="tagRow">${tags}</div>` : ''}
+        </button>
+      `;
     }
 
-    function renderSearch() {
-      const list = document.getElementById('searchList');
-      const query = state.searchQuery.trim();
-      const nodes = filteredNodes()
-        .map(node => ({ node, score: scoreNode(node, query) }))
-        .filter(entry => entry.score >= 0)
-        .sort((a, b) => b.score - a.score)
-        .map(entry => entry.node);
+    function renderList() {
+      const items = currentListItems();
+      if (state.view === 'graph') {
+        return;
+      }
 
-      list.innerHTML = nodes.length
-        ? nodes.map(node => renderItem(node, node.excerpt)).join('')
-        : '<div class="empty">No matches yet.</div>';
-      bindListClicks(list);
+      resultsList.innerHTML = items.length
+        ? items.map(node => renderItem(node, state.view === 'search' ? node.excerpt : '')).join('')
+        : '<div class="empty">当前筛选下没有结果。</div>';
+
+      for (const node of resultsList.querySelectorAll('.item')) {
+        node.addEventListener('click', () => selectNote(node.dataset.id));
+        node.addEventListener('dblclick', () => {
+          selectNote(node.dataset.id);
+          openSelectedNote();
+        });
+      }
     }
 
-    function renderRecent() {
-      const list = document.getElementById('recentList');
-      const allowed = new Set(filteredNodes().map(node => node.id));
-      const nodes = (state.index.recent || []).filter(item => allowed.has(item.id));
-      list.innerHTML = nodes.length
-        ? nodes.map(item => renderItem(item)).join('')
-        : '<div class="empty">No recent notes.</div>';
-      bindListClicks(list);
+    function renderPreview() {
+      const node = nodeById(state.selectedId);
+      if (!node) {
+        previewMeta.textContent = '未选中笔记';
+        inspectorHero.innerHTML = `
+          <h2 class="inspectorTitle">选择一张卡片或一个节点</h2>
+          <div class="inspectorSubtitle">左侧筛选，中间浏览或看图谱，右侧始终保持预览和动作区。这样不用跳到单独页面。</div>
+          <div class="inspectorTags">
+            <span class="inspectorTag">Esc 返回 Launcher</span>
+            <span class="inspectorTag">Enter 打开选中笔记</span>
+            <span class="inspectorTag">单击先预览</span>
+          </div>
+        `;
+        inspectorBody.innerHTML = `
+          <div class="cardSection">
+            <div class="cardSectionTitle">当前状态</div>
+            ${state.searchQuery ? `正在搜索 “${escapeHtml(state.searchQuery)}”。` : '当前没有选中的笔记。'}
+          </div>
+          <div class="cardSection">
+            <div class="cardSectionTitle">建议</div>
+            从图谱里点击节点，或者在 Browse / Search / Recent 里点一条笔记，就会在这里直接展开详情。
+          </div>
+        `;
+        return;
+      }
+
+      previewMeta.textContent = node.relPath || node.path;
+      inspectorHero.innerHTML = `
+        <h2 class="inspectorTitle">${escapeHtml(node.title)}</h2>
+        <div class="inspectorSubtitle">${escapeHtml(node.relPath || node.path)}</div>
+        <div class="inspectorTags">
+          <span class="inspectorTag">${escapeHtml(formatTime(node.mtime))}</span>
+          <span class="inspectorTag">${escapeHtml(node.folder || '(root)')}</span>
+          ${(node.tags || []).map(tag => `<span class="inspectorTag">${escapeHtml(tag)}</span>`).join('')}
+        </div>
+      `;
+      inspectorBody.innerHTML = `
+        <div class="cardSection">
+          <div class="cardSectionTitle">内容预览</div>
+          ${escapeHtml(node.excerpt || '暂无摘要')}
+        </div>
+        <div class="cardSection">
+          <div class="cardSectionTitle">打开方式</div>
+          现在可以直接在这里预览，确定后再打开 Typora。Esc 会先退出当前笔记预览。
+        </div>
+        <div class="cardSection">
+          <div class="cardSectionTitle">图谱联动</div>
+          选中这个笔记时，图谱里会高亮当前节点和相关路径，帮助你保持上下文。
+        </div>
+      `;
+    }
+
+    function setView(view) {
+      state.view = view;
+      for (const tab of document.querySelectorAll('.tab')) {
+        tab.classList.toggle('active', tab.dataset.view === view);
+      }
+      viewLabel.innerHTML = `<strong>${escapeHtml(view[0].toUpperCase() + view.slice(1))}</strong> 当前视图`;
+
+      const useGraph = view === 'graph';
+      document.getElementById('graphView').classList.toggle('hidden', !useGraph);
+      document.getElementById('listView').classList.toggle('hidden', useGraph);
+      panelHint.textContent = useGraph ? '点击节点先预览，双击打开' : '点击列表先预览，双击打开';
+      panelMeta.textContent = useGraph
+        ? `图模式：${document.getElementById('graphMode').selectedOptions[0].textContent}`
+        : `${currentListItems().length} 条结果`;
+
+      if (useGraph) {
+        buildGraphData();
+        resizeCanvas();
+      } else {
+        renderList();
+      }
     }
 
     function buildGraphData() {
-      const nodes = filteredNodes();
+      const nodes = visibleNodes();
       const allowed = new Set(nodes.map(node => node.id));
       let edges = (state.index.edges || []).filter(edge => allowed.has(edge.from) && allowed.has(edge.to));
 
@@ -531,13 +1008,14 @@
     function initSimulation() {
       const rect = graphCanvas.getBoundingClientRect();
       const width = rect.width || 800;
-      const height = rect.height || 500;
+      const height = rect.height || 560;
       const centerX = width / 2;
       const centerY = height / 2;
+      state.settledFrames = 0;
 
       state.simNodes = state.graphNodes.map((node, index) => {
         const angle = (index / Math.max(state.graphNodes.length, 1)) * Math.PI * 2;
-        const radius = Math.min(width, height) * 0.28;
+        const radius = Math.min(width, height) * 0.24;
         return {
           id: node.id,
           node,
@@ -547,21 +1025,20 @@
           vy: 0,
         };
       });
+    }
 
-      const lookup = new Map(state.simNodes.map(item => [item.id, item]));
-      state.graphEdges.forEach(edge => {
-        const from = lookup.get(edge.from);
-        const to = lookup.get(edge.to);
-        if (!from || !to) return;
-        const dx = to.x - from.x;
-        const dy = to.y - from.y;
-        const dist = Math.max(Math.hypot(dx, dy), 1);
-        const force = (dist - 120) * 0.02;
-        from.vx += (dx / dist) * force;
-        from.vy += (dy / dist) * force;
-        to.vx -= (dx / dist) * force;
-        to.vy -= (dy / dist) * force;
-      });
+    function fitGraph() {
+      state.panX = 0;
+      state.panY = 0;
+      state.scale = 1;
+      drawGraph();
+    }
+
+    function toWorld(screenX, screenY) {
+      return {
+        x: (screenX - state.panX) / state.scale,
+        y: (screenY - state.panY) / state.scale,
+      };
     }
 
     function resizeCanvas() {
@@ -582,9 +1059,13 @@
       if (!state.simNodes.length) {
         graphCtx.fillStyle = getComputedStyle(document.body).getPropertyValue('--muted');
         graphCtx.font = '14px -apple-system, sans-serif';
-        graphCtx.fillText('No notes to graph yet. Refresh index after adding markdown files.', 24, 40);
+        graphCtx.fillText('没有可显示的笔记。添加内容后刷新索引即可。', 24, 40);
         return;
       }
+
+      graphCtx.save();
+      graphCtx.translate(state.panX, state.panY);
+      graphCtx.scale(state.scale, state.scale);
 
       const lookup = new Map(state.simNodes.map(item => [item.id, item]));
 
@@ -592,10 +1073,11 @@
         const from = lookup.get(edge.from);
         const to = lookup.get(edge.to);
         if (!from || !to) continue;
+        const active = state.selectedId && (edge.from === state.selectedId || edge.to === state.selectedId);
         graphCtx.strokeStyle = edge.type === 'parent'
-          ? 'rgba(43, 110, 242, 0.55)'
-          : 'rgba(120, 130, 150, 0.35)';
-        graphCtx.lineWidth = edge.type === 'parent' ? 2 : 1;
+          ? (active ? 'rgba(37, 99, 235, 0.80)' : 'rgba(37, 99, 235, 0.46)')
+          : (active ? 'rgba(94, 168, 255, 0.72)' : 'rgba(124, 136, 156, 0.28)');
+        graphCtx.lineWidth = active ? 2.6 : (edge.type === 'parent' ? 2 : 1.1);
         graphCtx.beginPath();
         graphCtx.moveTo(from.x, from.y);
         graphCtx.lineTo(to.x, to.y);
@@ -604,9 +1086,9 @@
 
       for (const item of state.simNodes) {
         const active = item.id === state.hoveredId || item.id === state.selectedId;
-        const radius = active ? 10 : 7;
+        const radius = active ? 11 : 8;
         graphCtx.beginPath();
-        graphCtx.fillStyle = active ? '#2b6ef2' : '#5ea8ff';
+        graphCtx.fillStyle = active ? '#2563eb' : '#5ea8ff';
         graphCtx.arc(item.x, item.y, radius, 0, Math.PI * 2);
         graphCtx.fill();
 
@@ -616,64 +1098,81 @@
           graphCtx.fillText(item.node.title, item.x + 12, item.y - 10);
         }
       }
+
+      graphCtx.restore();
     }
 
     function stepSimulation() {
-      const rect = graphCanvas.getBoundingClientRect();
-      const width = rect.width;
-      const height = rect.height;
-      const centerX = width / 2;
-      const centerY = height / 2;
-      const lookup = new Map(state.simNodes.map(item => [item.id, item]));
+      if (state.view === 'graph' && state.simNodes.length) {
+        const rect = graphCanvas.getBoundingClientRect();
+        const width = rect.width;
+        const height = rect.height;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const lookup = new Map(state.simNodes.map(item => [item.id, item]));
 
-      for (let i = 0; i < state.simNodes.length; i++) {
-        for (let j = i + 1; j < state.simNodes.length; j++) {
-          const a = state.simNodes[i];
-          const b = state.simNodes[j];
-          const dx = b.x - a.x;
-          const dy = b.y - a.y;
-          const dist = Math.max(Math.hypot(dx, dy), 1);
-          const force = 900 / (dist * dist);
-          a.vx -= (dx / dist) * force;
-          a.vy -= (dy / dist) * force;
-          b.vx += (dx / dist) * force;
-          b.vy += (dy / dist) * force;
+        let energy = 0;
+
+        for (let i = 0; i < state.simNodes.length; i++) {
+          for (let j = i + 1; j < state.simNodes.length; j++) {
+            const a = state.simNodes[i];
+            const b = state.simNodes[j];
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const dist = Math.max(Math.hypot(dx, dy), 1);
+            const force = 850 / (dist * dist);
+            a.vx -= (dx / dist) * force;
+            a.vy -= (dy / dist) * force;
+            b.vx += (dx / dist) * force;
+            b.vy += (dy / dist) * force;
+          }
         }
+
+        for (const edge of state.graphEdges) {
+          const from = lookup.get(edge.from);
+          const to = lookup.get(edge.to);
+          if (!from || !to) continue;
+          const dx = to.x - from.x;
+          const dy = to.y - from.y;
+          const dist = Math.max(Math.hypot(dx, dy), 1);
+          const desired = state.graphMode === 'tags' ? 150 : 112;
+          const force = (dist - desired) * 0.025;
+          from.vx += (dx / dist) * force;
+          from.vy += (dy / dist) * force;
+          to.vx -= (dx / dist) * force;
+          to.vy -= (dy / dist) * force;
+        }
+
+        for (const item of state.simNodes) {
+          if (state.draggingNodeId === item.id) continue;
+          item.vx += (centerX - item.x) * 0.0012;
+          item.vy += (centerY - item.y) * 0.0012;
+          item.vx *= 0.86;
+          item.vy *= 0.86;
+          item.x += item.vx;
+          item.y += item.vy;
+          item.x = Math.max(24, Math.min(width - 24, item.x));
+          item.y = Math.max(24, Math.min(height - 24, item.y));
+          energy += Math.abs(item.vx) + Math.abs(item.vy);
+        }
+
+        if (energy < 0.06) {
+          state.settledFrames += 1;
+        } else {
+          state.settledFrames = 0;
+        }
+
+        drawGraph();
       }
 
-      for (const edge of state.graphEdges) {
-        const from = lookup.get(edge.from);
-        const to = lookup.get(edge.to);
-        if (!from || !to) continue;
-        const dx = to.x - from.x;
-        const dy = to.y - from.y;
-        const dist = Math.max(Math.hypot(dx, dy), 1);
-        const force = (dist - 110) * 0.03;
-        from.vx += (dx / dist) * force;
-        from.vy += (dy / dist) * force;
-        to.vx -= (dx / dist) * force;
-        to.vy -= (dy / dist) * force;
-      }
-
-      for (const item of state.simNodes) {
-        item.vx += (centerX - item.x) * 0.001;
-        item.vy += (centerY - item.y) * 0.001;
-        item.vx *= 0.84;
-        item.vy *= 0.84;
-        item.x += item.vx;
-        item.y += item.vy;
-        item.x = Math.max(24, Math.min(width - 24, item.x));
-        item.y = Math.max(24, Math.min(height - 24, item.y));
-      }
-
-      drawGraph();
       requestAnimationFrame(stepSimulation);
     }
 
-    function graphNodeAt(x, y) {
+    function graphNodeAt(screenX, screenY) {
+      const point = toWorld(screenX, screenY);
       for (let i = state.simNodes.length - 1; i >= 0; i--) {
         const item = state.simNodes[i];
-        if (Math.hypot(item.x - x, item.y - y) <= 12) {
+        if (Math.hypot(item.x - point.x, item.y - point.y) <= 14) {
           return item;
         }
       }
@@ -696,65 +1195,137 @@
       `;
     }
 
-    graphCanvas.addEventListener('mousemove', event => {
+    function focusNode(id) {
+      const item = state.simNodes.find(node => node.id === id);
+      if (!item) return;
+      const rect = graphCanvas.getBoundingClientRect();
+      state.panX = rect.width / 2 - item.x * state.scale;
+      state.panY = rect.height / 2 - item.y * state.scale;
+      drawGraph();
+    }
+
+    function renderAll() {
+      document.getElementById('vaultLabel').textContent = state.index.vault || 'Typora vault manager';
+      statsLabel.innerHTML = `<strong>${state.index.nodes.length}</strong> notes`;
+      renderStatusChips();
+      renderFilters();
+      renderPreview();
+      setView(state.view);
+    }
+
+    graphCanvas.addEventListener('pointerdown', event => {
       const rect = graphCanvas.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
       const item = graphNodeAt(x, y);
-      state.hoveredId = item ? item.id : null;
-      showTooltip(item, x, y);
+      state.lastPointer = { x: event.clientX, y: event.clientY };
+      if (item) {
+        state.pointerMode = 'node';
+        state.draggingNodeId = item.id;
+        selectNote(item.id);
+      } else {
+        state.pointerMode = 'canvas';
+        state.draggingCanvas = true;
+        graphCanvas.classList.add('dragging');
+      }
+      graphCanvas.setPointerCapture?.(event.pointerId);
+    });
+
+    graphCanvas.addEventListener('pointermove', event => {
+      const rect = graphCanvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const item = graphNodeAt(x, y);
+
+      if (state.pointerMode === 'node' && state.draggingNodeId) {
+        const world = toWorld(x, y);
+        const dragged = state.simNodes.find(node => node.id === state.draggingNodeId);
+        if (dragged) {
+          dragged.x = world.x;
+          dragged.y = world.y;
+          dragged.vx = 0;
+          dragged.vy = 0;
+          drawGraph();
+        }
+      } else if (state.pointerMode === 'canvas' && state.draggingCanvas) {
+        state.panX += event.clientX - state.lastPointer.x;
+        state.panY += event.clientY - state.lastPointer.y;
+        state.lastPointer = { x: event.clientX, y: event.clientY };
+        drawGraph();
+      } else {
+        state.hoveredId = item ? item.id : null;
+        showTooltip(item, x, y);
+        drawGraph();
+      }
+    });
+
+    graphCanvas.addEventListener('pointerup', event => {
+      const rect = graphCanvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const item = graphNodeAt(x, y);
+      if (!state.pointerMode && item) {
+        selectNote(item.id);
+      }
+      state.pointerMode = null;
+      state.draggingCanvas = false;
+      state.draggingNodeId = null;
+      graphCanvas.classList.remove('dragging');
+    });
+
+    graphCanvas.addEventListener('dblclick', event => {
+      const rect = graphCanvas.getBoundingClientRect();
+      const item = graphNodeAt(event.clientX - rect.left, event.clientY - rect.top);
+      if (item) {
+        selectNote(item.id);
+        openSelectedNote();
+      }
     });
 
     graphCanvas.addEventListener('mouseleave', () => {
       state.hoveredId = null;
       tooltip.style.display = 'none';
+      drawGraph();
     });
 
-    graphCanvas.addEventListener('click', event => {
+    graphCanvas.addEventListener('wheel', event => {
+      event.preventDefault();
       const rect = graphCanvas.getBoundingClientRect();
-      const item = graphNodeAt(event.clientX - rect.left, event.clientY - rect.top);
-      if (item) {
-        state.selectedId = item.id;
-        postMessage({ type: 'open', path: item.node.path });
-      }
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+      const worldBefore = toWorld(mouseX, mouseY);
+      const nextScale = Math.max(0.65, Math.min(2.1, state.scale * (event.deltaY > 0 ? 0.92 : 1.08)));
+      state.scale = nextScale;
+      state.panX = mouseX - worldBefore.x * state.scale;
+      state.panY = mouseY - worldBefore.y * state.scale;
+      drawGraph();
+    }, { passive: false });
+
+    document.getElementById('zoomInBtn').addEventListener('click', () => {
+      state.scale = Math.min(2.1, state.scale * 1.1);
+      drawGraph();
     });
 
-    function setView(view) {
-      state.view = view;
-      for (const tab of document.querySelectorAll('.tab')) {
-        tab.classList.toggle('active', tab.dataset.view === view);
-      }
-      for (const panel of document.querySelectorAll('.panel')) {
-        panel.classList.remove('active');
-      }
-      document.getElementById(`${view}Panel`).classList.add('active');
-      if (view === 'graph') {
-        buildGraphData();
-        resizeCanvas();
-      }
-    }
+    document.getElementById('zoomOutBtn').addEventListener('click', () => {
+      state.scale = Math.max(0.65, state.scale * 0.9);
+      drawGraph();
+    });
 
-    function renderAll() {
-      document.getElementById('vaultLabel').textContent = state.index.vault || 'Typora vault manager';
-      document.getElementById('statsLabel').textContent = `${state.index.nodes.length} notes · ${(state.index.edges || []).length} links`;
-      renderFilters();
-      renderBrowse();
-      renderSearch();
-      renderRecent();
-      if (state.view === 'graph') {
-        buildGraphData();
-        resizeCanvas();
-      }
-    }
-
-    window.setNotesIndex = function(index) {
-      state.index = index || state.index;
+    document.getElementById('fitGraphBtn').addEventListener('click', fitGraph);
+    document.getElementById('refreshBtn').addEventListener('click', () => postMessage({ type: 'refresh' }));
+    document.getElementById('newDailyBtn').addEventListener('click', () => postMessage({ type: 'newDaily' }));
+    document.getElementById('backHomeBtn').addEventListener('click', () => postMessage({ type: 'home' }));
+    document.getElementById('previewBackBtn').addEventListener('click', backOrClose);
+    document.getElementById('closeDetailBtn').addEventListener('click', backOrClose);
+    document.getElementById('previewOpenBtn').addEventListener('click', openSelectedNote);
+    document.getElementById('openSelectedBtn').addEventListener('click', openSelectedNote);
+    document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+      state.folderFilter = '';
+      state.tagFilter = '';
+      state.searchQuery = '';
+      document.getElementById('searchInput').value = '';
       renderAll();
-    };
-
-    window.focusNotes = function() {
-      document.getElementById('searchInput').focus();
-    };
+    });
 
     for (const tab of document.querySelectorAll('.tab')) {
       tab.addEventListener('click', () => setView(tab.dataset.view));
@@ -762,31 +1333,58 @@
 
     document.getElementById('graphMode').addEventListener('change', event => {
       state.graphMode = event.target.value;
-      buildGraphData();
+      if (state.view === 'graph') {
+        buildGraphData();
+        drawGraph();
+      }
+      panelMeta.textContent = `图模式：${event.target.selectedOptions[0].textContent}`;
     });
 
     document.getElementById('searchInput').addEventListener('input', event => {
       state.searchQuery = event.target.value;
-      renderSearch();
-      if (state.view !== 'search' && state.searchQuery) {
+      if (state.searchQuery && state.view !== 'search') {
         setView('search');
+      } else if (state.view !== 'graph') {
+        renderList();
+      }
+      renderStatusChips();
+      if (state.view === 'search') {
+        renderList();
       }
     });
 
-    document.getElementById('refreshBtn').addEventListener('click', () => {
-      postMessage({ type: 'refresh' });
-    });
-
-    document.getElementById('newDailyBtn').addEventListener('click', () => {
-      postMessage({ type: 'newDaily' });
-    });
-
-  document.addEventListener('keydown', event => {
+    document.addEventListener('keydown', event => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        postMessage({ type: 'close' });
+        backOrClose();
+        return;
+      }
+
+      if (event.key === 'Enter' && state.selectedId) {
+        event.preventDefault();
+        openSelectedNote();
+        return;
+      }
+
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'f') {
+        event.preventDefault();
+        document.getElementById('searchInput').focus();
+        document.getElementById('searchInput').select();
       }
     });
+
+    window.setNotesIndex = function(index) {
+      state.index = index || state.index;
+      if (state.selectedId && !nodeById(state.selectedId)) {
+        state.selectedId = null;
+      }
+      renderAll();
+    };
+
+    window.focusNotes = function() {
+      document.getElementById('searchInput').focus();
+      drawGraph();
+    };
 
     window.addEventListener('resize', resizeCanvas);
     requestAnimationFrame(stepSimulation);

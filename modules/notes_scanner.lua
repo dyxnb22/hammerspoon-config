@@ -235,53 +235,7 @@ return function(config, helpers)
 
   local function parseFile(path, attr)
     local content = helpers.readFile(path) or ""
-    local meta = {}
-    local body = content
-
-    do
-      local normalizedText = content:gsub("\r\n", "\n")
-      if normalizedText:sub(1, 4) == "---\n" then
-        local closeStart, closeEnd = normalizedText:find("\n---\n", 5, true)
-        if not closeStart then
-          closeStart, closeEnd = normalizedText:find("\n---", 5, true)
-          if closeStart ~= (#normalizedText - 3) then
-            closeStart = nil
-            closeEnd = nil
-          end
-        end
-
-        if closeStart then
-          local frontBlock = normalizedText:sub(5, closeStart - 1)
-          body = normalizedText:sub(closeEnd + 1)
-          local currentListKey = nil
-
-          for _, line in ipairs(splitLines(frontBlock)) do
-            local listItem = line:match("^%s*-%s+(.+)$")
-            if currentListKey and listItem then
-              table.insert(meta[currentListKey], stripWrappingQuotes(listItem))
-            else
-              currentListKey = nil
-              local separator = line:find(":", 1, true)
-              local key = separator and line:sub(1, separator - 1):match("^%s*([%w_%-]+)%s*$") or nil
-              local value = separator and line:sub(separator + 1):gsub("^%s*", "") or nil
-              if key and value then
-                key = key:lower()
-                if value == "" or value:match("^%[") then
-                  meta[key] = parseScalarList(value)
-                  if #meta[key] == 0 then
-                    currentListKey = key
-                    meta[key] = {}
-                  end
-                else
-                  meta[key] = stripWrappingQuotes(value)
-                end
-              end
-            end
-          end
-        end
-      end
-    end
-
+    local meta, body = parseFrontMatter(content)
     local rel = relativePath(path)
     local fileName = path:match("([^/]+)$")
     local heading = firstHeading(body)
@@ -438,7 +392,10 @@ return function(config, helpers)
 
   function M.saveIndex(index)
     helpers.ensureDir(config.dataDir)
-    helpers.writeJsonFile(config.notes.indexFile, index)
+    local ok = helpers.writeJsonFile(config.notes.indexFile, index)
+    if not ok then
+      hs.alert.show("Failed to save notes index")
+    end
     return index
   end
 

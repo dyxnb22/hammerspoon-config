@@ -2,8 +2,29 @@ return function(_, helpers)
   local M = {}
   local json = hs.json
 
+  local function cjkRatio(text)
+    local total = 0
+    local cjk = 0
+
+    for _, code in utf8.codes(text) do
+      total = total + 1
+      if (code >= 0x4E00 and code <= 0x9FFF)
+        or (code >= 0x3400 and code <= 0x4DBF)
+        or (code >= 0x3040 and code <= 0x30FF)
+        or (code >= 0xAC00 and code <= 0xD7AF) then
+        cjk = cjk + 1
+      end
+    end
+
+    if total == 0 then
+      return 0
+    end
+
+    return cjk / total
+  end
+
   local function detectTargetLanguage(text)
-    if text:find("[\128-\255]") then
+    if cjkRatio(text) >= 0.2 then
       return "en"
     end
 
@@ -45,7 +66,7 @@ return function(_, helpers)
     hs.http.asyncGet(url, nil, function(status, body)
       if status ~= 200 then
         hs.urlevent.openURL("https://translate.google.com/?sl=auto&tl=" .. target .. "&text=" .. hs.http.encodeForQuery(normalized) .. "&op=translate")
-        hs.alert.show("Opened Google Translate")
+        hs.alert.show("Opened Google Translate in browser")
         return
       end
 
@@ -87,6 +108,17 @@ return function(_, helpers)
     if button == "Translate" then
       M.translateText(text)
     end
+  end
+
+  function M.launcherCommands()
+    return {
+      {
+        id = "translate",
+        text = "Google Translate",
+        subText = "Translate selected text or clipboard text",
+        run = M.prompt,
+      },
+    }
   end
 
   return M

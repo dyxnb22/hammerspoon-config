@@ -1,8 +1,9 @@
 return function(config, helpers)
-  local createPanel = nil
   local scanner = nil
   local panel = nil
   local currentIndex = nil
+  local indexLoadedAt = 0
+  local homeHandler = nil
 
   local M = {}
 
@@ -15,11 +16,8 @@ return function(config, helpers)
 
   local function getPanel()
     if not panel then
-      if not createPanel then
-        createPanel = require("webview_panel")(config, helpers)
-      end
-
-      panel = createPanel({
+      local webviewPanel = require("webview_panel")(config, helpers)
+      panel = webviewPanel.create({
         channel = "notes",
         htmlPath = config.assetsDir .. "/notes.html",
         frame = function()
@@ -35,6 +33,14 @@ return function(config, helpers)
           }
         end,
         onMessage = function(payload, hidePanel)
+          if payload.type == "home" then
+            hidePanel()
+            if homeHandler then
+              hs.timer.doAfter(0.08, homeHandler)
+            end
+            return
+          end
+
           if payload.type == "open" and payload.path then
             hidePanel()
             hs.timer.doAfter(0.08, function()
@@ -44,7 +50,7 @@ return function(config, helpers)
           end
 
           if payload.type == "refresh" then
-            currentIndex = M.refreshIndex()
+            currentIndex = M.refreshIndex(true)
             panel.evaluate("window.setNotesIndex(" .. hs.json.encode(currentIndex) .. ");")
             hs.alert.show("Notes index refreshed")
             return
@@ -105,20 +111,29 @@ return function(config, helpers)
 
     local stamp = os.date("%Y-%m-%d")
     local path = dailyDir .. "/" .. stamp .. ".md"
+    local created = false
+
     if not hs.fs.attributes(path) then
       local file = io.open(path, "w")
       if file then
         file:write("# " .. stamp .. "\n\n")
         file:close()
+        created = true
       end
     end
 
-    currentIndex = M.refreshIndex()
+    if created then
+      M.refreshIndex(true)
+    end
+
     return path
   end
 
-  function M.refreshIndex()
-    currentIndex = getScanner().refresh()
+  function M.refreshIndex(force)
+    if force or not currentIndex then
+      currentIndex = getScanner().refresh()
+      indexLoadedAt = os.time()
+    end
     return currentIndex
   end
 
@@ -168,17 +183,24 @@ Use the graph view to explore note links, or search by title and tags.
     end
   end
 
-  function M.loadIndex()
+  function M.loadIndex(force)
+    if not force and currentIndex and indexLoadedAt > 0 then
+      return currentIndex
+    end
+
     currentIndex = getScanner().loadIndex()
+    indexLoadedAt = os.time()
+
     if not currentIndex.nodes or #currentIndex.nodes == 0 then
       M.seedWelcomeVault()
-      currentIndex = M.refreshIndex()
+      currentIndex = M.refreshIndex(true)
     end
+
     return currentIndex
   end
 
   function M.openRecentChooser()
-    local index = M.loadIndex()
+    local index = M.loadIndex(false)
     local choices = {}
 
     for _, item in ipairs(index.recent or {}) do
@@ -202,16 +224,12 @@ Use the graph view to explore note links, or search by title and tags.
     end)
   end
 
-  function M.openCenter()
-    currentIndex = M.loadIndex()
-    getPanel().show({
-      eval = "window.setNotesIndex(" .. hs.json.encode(currentIndex) .. "); window.focusNotes();",
-    })
-  end
+  function M.open(options)
+    options = options or {}
+    currentIndex = M.loadIndex(false)
 
-  function M.toggleCenter()
-    currentIndex = M.loadIndex()
-    getPanel().toggle({
+    local method = options.toggle and "toggle" or "show"
+    getPanel()[method]({
       eval = "window.setNotesIndex(" .. hs.json.encode(currentIndex) .. "); window.focusNotes();",
     })
   end
@@ -219,17 +237,51 @@ Use the graph view to explore note links, or search by title and tags.
   function M.bindHotkeys()
     local hotkeys = config.notes.hotkeys
 
-    hs.hotkey.bind(hotkeys.center.modifiers, hotkeys.center.key, M.toggleCenter)
+    hs.hotkey.bind(hotkeys.center.modifiers, hotkeys.center.key, function()
+      M.open({ toggle = true })
+    end)
     hs.hotkey.bind(hotkeys.recent.modifiers, hotkeys.recent.key, M.openRecentChooser)
     hs.hotkey.bind(hotkeys.newDaily.modifiers, hotkeys.newDaily.key, function()
       local path = M.newDailyNote()
       M.openInTypora(path)
     end)
     hs.hotkey.bind(hotkeys.refresh.modifiers, hotkeys.refresh.key, function()
-      M.refreshIndex()
+      M.refreshIndex(true)
       hs.alert.show("Notes index refreshed")
     end)
     hs.hotkey.bind(hotkeys.openVault.modifiers, hotkeys.openVault.key, M.openVaultInFinder)
+  end
+
+  function M.setHomeHandler(handler)
+    homeHandler = handler
+  end
+
+  function M.launcherCommands()
+    return {
+      {
+        id = "notes",
+        text = "Notes Center",
+        subText = "Browse vault, graph links, and open in Typora",
+        run = function()
+          M.open({ toggle = false })
+        end,
+      },
+      {
+        id = "notes-recent",
+        text = "Recent Notes",
+        subText = "Open a recently edited markdown note",
+        run = M.openRecentChooser,
+      },
+      {
+        id = "notes-daily",
+        text = "New Daily Note",
+        subText = "Create or open today's journal note",
+        run = function()
+          local path = M.newDailyNote()
+          M.openInTypora(path)
+        end,
+      },
+    }
   end
 
   return M

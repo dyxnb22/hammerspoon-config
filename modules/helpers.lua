@@ -28,9 +28,41 @@ function M.readJsonFile(path, fallback)
 end
 
 function M.writeJsonFile(path, value)
-  local file = assert(io.open(path, "w"))
-  file:write(json.encode(value, true))
+  local parent = path:match("^(.*)/[^/]+$")
+  if parent then
+    M.ensureDir(parent)
+  end
+
+  local file, err = io.open(path, "w")
+  if not file then
+    hs.printf("writeJsonFile failed for %s: %s", path, tostring(err))
+    return false, err
+  end
+
+  local ok, encoded = pcall(json.encode, value, true)
+  if not ok then
+    file:close()
+    hs.printf("writeJsonFile encode failed for %s: %s", path, tostring(encoded))
+    return false, encoded
+  end
+
+  file:write(encoded)
   file:close()
+  return true
+end
+
+function M.hashString(text)
+  local hash = 5381
+  for index = 1, #tostring(text) do
+    hash = ((hash * 33) + string.byte(text, index)) % 2147483647
+  end
+  return hash
+end
+
+function M.accentForId(id)
+  local accents = { "blue", "indigo", "teal", "green", "orange", "pink" }
+  local hash = M.hashString(id or "")
+  return accents[(hash % #accents) + 1]
 end
 
 function M.normalizeText(text)

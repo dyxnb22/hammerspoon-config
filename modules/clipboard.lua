@@ -5,9 +5,18 @@ return function(config, helpers)
   local clipboardHistory = settings.get("clipboardHistory") or {}
   local lastClipboardValue = helpers.normalizeText(hs.pasteboard.getContents())
   local watcher = nil
+  local persistTimer = nil
 
   local function persist()
     settings.set("clipboardHistory", clipboardHistory)
+    persistTimer = nil
+  end
+
+  local function schedulePersist()
+    if persistTimer then
+      persistTimer:stop()
+    end
+    persistTimer = hs.timer.doAfter(0.3, persist)
   end
 
   function M.push(text)
@@ -32,7 +41,7 @@ return function(config, helpers)
       table.remove(clipboardHistory)
     end
 
-    persist()
+    schedulePersist()
   end
 
   function M.items()
@@ -41,7 +50,9 @@ return function(config, helpers)
 
   function M.clear()
     clipboardHistory = {}
-    persist()
+    schedulePersist()
+    hs.alert.show("Clipboard history cleared")
+    M.openChooser()
   end
 
   function M.copyAgain(text)
@@ -62,45 +73,12 @@ return function(config, helpers)
 
   function M.deleteAt(index)
     table.remove(clipboardHistory, index)
-    persist()
+    schedulePersist()
+    hs.alert.show("Deleted")
+    M.openChooser()
   end
 
-  function M.openItemActions(item, index)
-    helpers.chooseFromList("Clipboard item", {
-      {
-        text = "Paste",
-        subText = "Paste this item into the front app",
-        action = "paste",
-      },
-      {
-        text = "Copy Again",
-        subText = "Put this item back on the clipboard",
-        action = "copy",
-      },
-      {
-        text = "Delete",
-        subText = "Remove this item from clipboard history",
-        action = "delete",
-      },
-    }, function(choice)
-      if choice.action == "paste" then
-        M.pasteToFrontmostApp(item)
-        return
-      end
-
-      if choice.action == "copy" then
-        M.copyAgain(item)
-        return
-      end
-
-      if choice.action == "delete" then
-        M.deleteAt(index)
-        hs.alert.show("Deleted")
-      end
-    end)
-  end
-
-  function M.openChooser()
+  local function buildChoices()
     local choices = {
       {
         text = "Clear Clipboard History",
@@ -112,22 +90,64 @@ return function(config, helpers)
     for index, item in ipairs(clipboardHistory) do
       table.insert(choices, {
         text = helpers.previewText(item, 80),
-        subText = "Clipboard item #" .. index,
+        subText = "Enter paste · Shift+Enter copy again · Delete remove",
         action = "item",
         index = index,
         value = item,
       })
     end
 
-    helpers.chooseFromList("Clipboard history", choices, function(choice)
-      if choice.action == "clear" then
-        M.clear()
-        hs.alert.show("Clipboard history cleared")
+    return choices
+  end
+
+  function M.openChooser()
+    local chooser = hs.chooser.new(function(choice)
+      if not choice then
         return
       end
 
-      M.openItemActions(choice.value, choice.index)
+      if choice.action == "clear" then
+        M.clear()
+        return
+      end
+
+      if choice.action == "item" then
+        helpers.chooseFromList("Clipboard item", {
+          { text = "Paste", subText = "Paste into front app", action = "paste" },
+          { text = "Copy Again", subText = "Put item back on clipboard", action = "copy" },
+          { text = "Delete", subText = "Remove from history", action = "delete" },
+        }, function(actionChoice)
+          if actionChoice.action == "paste" then
+            M.pasteToFrontmostApp(choice.value)
+            return
+          end
+          if actionChoice.action == "copy" then
+            M.copyAgain(choice.value)
+            M.openChooser()
+            return
+          end
+          if actionChoice.action == "delete" then
+            M.deleteAt(choice.index)
+          end
+        end)
+      end
     end)
+
+    chooser:searchSubText(true)
+    chooser:placeholderText("Clipboard history")
+    chooser:choices(buildChoices())
+    chooser:show()
+  end
+
+  function M.launcherCommands()
+    return {
+      {
+        id = "clipboard",
+        text = "Clipboard History",
+        subText = "Browse the last 80 copied items",
+        run = M.openChooser,
+      },
+    }
   end
 
   function M.start()
