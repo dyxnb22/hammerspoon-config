@@ -201,28 +201,12 @@ Use the graph view to explore note links, or search by title and tags.
   end
 
   function M.openRecentChooser()
-    local index = M.loadIndex(false)
-    local choices = {}
-
-    for _, item in ipairs(index.recent or {}) do
-      table.insert(choices, {
-        text = item.title,
-        subText = item.path,
-        path = item.path,
-      })
-      if #choices >= 30 then
-        break
-      end
-    end
-
-    if #choices == 0 then
-      hs.alert.show("No notes found in vault")
+    if launcherToggle then
+      launcherToggle("recent note")
       return
     end
 
-    helpers.chooseFromList("Recent notes", choices, function(choice)
-      M.openInTypora(choice.path)
-    end)
+    M.open({ toggle = true })
   end
 
   function M.open(options)
@@ -243,7 +227,7 @@ Use the graph view to explore note links, or search by title and tags.
     end)
     hs.hotkey.bind(hotkeys.recent.modifiers, hotkeys.recent.key, function()
       if launcherToggle then
-        launcherToggle("note")
+        launcherToggle("recent note")
       else
         M.open({ toggle = true })
       end
@@ -270,6 +254,7 @@ Use the graph view to explore note links, or search by title and tags.
   function M.indexContributions(query)
     local items = {}
     local handlers = {}
+    local normalizedQuery = string.lower(helpers.normalizeText(query) or "")
     -- Use in-memory cache; only read from disk if not yet loaded
     local index = currentIndex
     if not index then
@@ -279,6 +264,10 @@ Use the graph view to explore note links, or search by title and tags.
         indexLoadedAt = os.time()
       end
     end
+
+    local noteSurfaceQuery = helpers.matchQuery(query, "notes", "note", "recent", "vault", "笔记")
+      or (normalizedQuery:find("note", 1, true) and normalizedQuery:find("recent", 1, true))
+      or normalizedQuery:find("最近", 1, true) ~= nil
 
     if helpers.matchQuery(query, "notes", "note", "vault", "typora", "markdown") then
       local centerId = "notes:center"
@@ -321,12 +310,39 @@ Use the graph view to explore note links, or search by title and tags.
       handlers[dailyId .. ":open"] = handlers[dailyId]
     end
 
+    if noteSurfaceQuery then
+      local recentId = "notes:recent"
+      table.insert(items, {
+        id = recentId,
+        kind = "command",
+        title = "Recent Notes",
+        subtitle = "Show the latest notes in Launcher",
+        badge = "Notes",
+        accent = helpers.accentForId(recentId),
+        keywords = "notes note recent latest vault 笔记 最近",
+        actions = {
+          { id = "open", label = "Browse", primary = true },
+        },
+      })
+      handlers[recentId] = function()
+        if launcherToggle then
+          launcherToggle("recent note")
+        else
+          M.open({ toggle = false })
+        end
+      end
+      handlers[recentId .. ":open"] = handlers[recentId]
+    end
+
+    local recentLimit = noteSurfaceQuery and 12 or math.huge
+    local recentCount = 0
     for _, item in ipairs(index.recent or {}) do
       local tagsText = ""
       if type(item.tags) == "table" then
         tagsText = table.concat(item.tags, " ")
       end
-      if helpers.matchQuery(query, item.title, item.path, tagsText) then
+      local includeAsRecent = noteSurfaceQuery and recentCount < recentLimit
+      if includeAsRecent or helpers.matchQuery(query, item.title, item.path, tagsText) then
         local id = "note:" .. helpers.hashString(item.path)
         table.insert(items, {
           id = id,
@@ -335,12 +351,13 @@ Use the graph view to explore note links, or search by title and tags.
           subtitle = item.path,
           badge = "Note",
           accent = helpers.accentForId(id),
-          keywords = table.concat({ item.title, item.path, tagsText }, " "),
+          keywords = table.concat({ item.title, item.path, tagsText, "note notes recent 最近 笔记" }, " "),
           actions = {
             { id = "open", label = "Open in Typora", primary = true },
             { id = "reveal", label = "Reveal in Finder" },
           },
         })
+        recentCount = recentCount + 1
         handlers[id] = function()
           M.openInTypora(item.path)
         end

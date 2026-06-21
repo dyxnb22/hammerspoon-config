@@ -158,6 +158,7 @@ return function(config, helpers)
     local subtitle = string.lower(item.subtitle or "")
     local badge = string.lower(item.badge or "")
     local keywords = string.lower(item.keywords or item.searchText or "")
+    local haystacks = { title, subtitle, badge, keywords }
 
     if title:sub(1, #query) == query then
       score = score + 400
@@ -172,7 +173,26 @@ return function(config, helpers)
       score = score + 80
     end
 
-      if item.kind == "calculator" or item.kind == "shell" then
+    local terms = {}
+    for term in query:gmatch("%S+") do
+      table.insert(terms, term)
+    end
+    if #terms > 1 then
+      local matchedTerms = 0
+      for _, term in ipairs(terms) do
+        for _, text in ipairs(haystacks) do
+          if text:find(term, 1, true) then
+            matchedTerms = matchedTerms + 1
+            break
+          end
+        end
+      end
+      if matchedTerms == #terms then
+        score = score + 180
+      end
+    end
+
+    if item.kind == "calculator" or item.kind == "shell" then
       return score + 500
     end
 
@@ -341,7 +361,7 @@ return function(config, helpers)
   function M.buildAsync(query, callback)
     local normalized = helpers.normalizeText(query)
     if not normalized or #normalized < 2 then
-      callback({}, {})
+      callback({}, {}, true)
       return
     end
 
@@ -367,9 +387,7 @@ return function(config, helpers)
         allHandlers[key] = fn
       end
       pending = pending - 1
-      if pending == 0 then
-        callback(allItems, allHandlers)
-      end
+      callback(allItems, allHandlers, pending == 0)
     end
 
     -- Dispatch built-in file search

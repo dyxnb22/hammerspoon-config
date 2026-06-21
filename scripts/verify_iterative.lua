@@ -81,10 +81,14 @@ local originalSearchFileLimit = config.searchFileLimit
 local originalQuickLinks = config.quickLinks
 local originalSnippets = config.snippets
 local originalTodoContent = helpers.readFile(originalTodoFile)
+local originalNotesIndexFile = config.notes.indexFile
+local originalNotesVaultPath = config.notes.vaultPath
 
 config.todoFile = tempRoot .. "/todos-test.json"
 config.searchRoots = { tempRoot }
 config.searchFileLimit = 10
+config.notes.indexFile = tempRoot .. "/notes-index-test.json"
+config.notes.vaultPath = tempRoot .. "/notes-vault"
 config.quickLinks = {
   { title = "GitHub", url = "https://github.com", keywords = "code repo" },
   { title = "Docs", url = "https://example.com/docs", keywords = "manual reference" },
@@ -106,6 +110,17 @@ hs.settings.set("clipboardHistory", {
 hs.settings.set("launcherUsage", {})
 hs.settings.set("launcherRecent", {})
 helpers.writeJsonFile(config.todoFile, {})
+helpers.ensureDir(config.notes.vaultPath)
+helpers.writeJsonFile(config.notes.indexFile, {
+  nodes = {
+    { title = "Welcome", path = config.notes.vaultPath .. "/Welcome.md", tags = { "welcome" } },
+    { title = "Project Notes", path = config.notes.vaultPath .. "/Project Notes.md", tags = { "project" } },
+  },
+  recent = {
+    { title = "Welcome", path = config.notes.vaultPath .. "/Welcome.md", tags = { "welcome" } },
+    { title = "Project Notes", path = config.notes.vaultPath .. "/Project Notes.md", tags = { "project" } },
+  },
+})
 
 local modules = {}
 for name, enabled in pairs(modulesEnabled) do
@@ -137,6 +152,8 @@ local function cleanup()
   config.searchFileLimit = originalSearchFileLimit
   config.quickLinks = originalQuickLinks
   config.snippets = originalSnippets
+  config.notes.indexFile = originalNotesIndexFile
+  config.notes.vaultPath = originalNotesVaultPath
 
   if originalClipboard ~= nil then
     hs.settings.set("clipboardHistory", originalClipboard)
@@ -271,15 +288,21 @@ local function runSyncRound()
 
   local notesSource = helpers.readFile(config.repoRoot .. "/modules/notes.lua") or ""
   check("notes has setLauncherWithQueryHandler function", notesSource:find("function M.setLauncherWithQueryHandler", 1, true) ~= nil)
-  check("notes recent hotkey uses launcherToggle not chooser", notesSource:find("launcherToggle(\"note\")", 1, true) ~= nil)
+  check("notes recent hotkey uses launcherToggle recent note query", notesSource:find("launcherToggle(\"recent note\")", 1, true) ~= nil)
 
   -- notes query returns proper items
   local noteItems = searchIndex.buildSync("note")
   check("note query returns notes:center", findItem(noteItems, function(item) return item.id == "notes:center" end) ~= nil)
   check("note query returns notes:daily", findItem(noteItems, function(item) return item.id == "notes:daily" end) ~= nil)
+  check("note query returns notes:recent", findItem(noteItems, function(item) return item.id == "notes:recent" end) ~= nil)
+  check("note query surfaces recent note results", countItems(noteItems, function(item) return item.kind == "note" end) >= 1)
 
   local dailyItems = searchIndex.buildSync("daily")
   check("daily query returns notes:daily command", findItem(dailyItems, function(item) return item.id == "notes:daily" end) ~= nil)
+
+  local recentItems = searchIndex.buildSync("recent note")
+  check("recent note query returns recent notes command", findItem(recentItems, function(item) return item.id == "notes:recent" end) ~= nil)
+  check("recent note query surfaces multiple recent notes", countItems(recentItems, function(item) return item.kind == "note" end) >= 2)
 
   -- Short query noise suppression
   local trItems = searchIndex.buildSync("tr")
@@ -363,7 +386,7 @@ local function runExtendedRound()
 
   local notesItems = searchIndex.buildSync("welcome")
   check("notes cached index searchable", findItem(notesItems, function(item)
-    return item.kind == "note" or item.id == "notes:center"
+    return item.kind == "note" and item.title == "Welcome"
   end) ~= nil)
 
   -- keepOpen: after toggle action, kind stays stable in subsequent search
@@ -385,18 +408,23 @@ local function runExtendedRound()
 
   -- addAsyncSource: register a sync-like source and verify it participates in buildAsync
   local dummySourceFired = false
+  local dummyCallbackCount = 0
   searchIndex.addAsyncSource("test-dummy", function(q, cb)
     dummySourceFired = true
     cb({ { id = "dummy:hit", kind = "command", title = "Dummy Hit", subtitle = "", badge = "Test",
            accent = "blue", actions = { { id = "open", label = "Open", primary = true } } } }, {})
   end)
   local dummyAsyncDone = false
-  searchIndex.buildAsync("dummy hit xyz", function(items, handlers)
+  searchIndex.buildAsync("dummy hit xyz", function(items, handlers, done)
+    dummyCallbackCount = dummyCallbackCount + 1
     dummyAsyncDone = true
     check("addAsyncSource registered source fires", dummySourceFired)
     check("addAsyncSource result included in merged items", findItem(items, function(item)
       return item.id == "dummy:hit"
     end) ~= nil)
+    if done then
+      check("addAsyncSource incremental callbacks observed", dummyCallbackCount >= 1, dummyCallbackCount)
+    end
   end)
   -- Give async callback 1 second to complete
   hs.timer.doAfter(1.0, function()

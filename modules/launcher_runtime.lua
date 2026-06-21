@@ -110,7 +110,7 @@ return function(config, helpers)
       return
     end
 
-    searchIndex.buildAsync(query, function(asyncItems, asyncHandlers)
+    searchIndex.buildAsync(query, function(asyncItems, asyncHandlers, done)
       if token ~= searchToken then
         return
       end
@@ -123,7 +123,7 @@ return function(config, helpers)
       callback({
         items = items,
         handlers = handlers,
-        loading = false,
+        loading = done ~= true,
         query = query,
       })
     end)
