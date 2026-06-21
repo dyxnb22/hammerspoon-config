@@ -265,11 +265,18 @@ Use the graph view to explore note links, or search by title and tags.
       end
     end
 
-    local noteSurfaceQuery = helpers.matchQuery(query, "notes", "note", "recent", "vault", "笔记")
+    -- Short queries (< 3 chars) must not generate note commands; they would
+    -- produce noise because "no" matches "notes", "d" matches "daily", etc.
+    local queryLen = #normalizedQuery
+    local minLenForCommands = queryLen >= 3
+
+    local noteSurfaceQuery = minLenForCommands and (
+      helpers.matchQuery(query, "notes", "note", "recent", "vault", "笔记")
       or (normalizedQuery:find("note", 1, true) and normalizedQuery:find("recent", 1, true))
       or normalizedQuery:find("最近", 1, true) ~= nil
+    )
 
-    if helpers.matchQuery(query, "notes", "note", "vault", "typora", "markdown") then
+    if minLenForCommands and helpers.matchQuery(query, "notes", "note", "vault", "typora", "markdown", "笔记") then
       local centerId = "notes:center"
       table.insert(items, {
         id = centerId,
@@ -278,7 +285,7 @@ Use the graph view to explore note links, or search by title and tags.
         subtitle = "Browse vault, graph, and search",
         badge = "Notes",
         accent = helpers.accentForId(centerId),
-        keywords = "notes vault typora markdown",
+        keywords = "notes vault typora markdown 笔记",
         actions = {
           { id = "open", label = "Open", primary = true },
         },
@@ -289,7 +296,7 @@ Use the graph view to explore note links, or search by title and tags.
       handlers[centerId .. ":open"] = handlers[centerId]
     end
 
-    if helpers.matchQuery(query, "notes", "note", "daily", "journal", "today", "笔记", "日记") then
+    if minLenForCommands and helpers.matchQuery(query, "notes", "note", "daily", "journal", "today", "笔记", "日记") then
       local dailyId = "notes:daily"
       table.insert(items, {
         id = dailyId,
@@ -319,7 +326,7 @@ Use the graph view to explore note links, or search by title and tags.
         subtitle = "Show the latest notes in Launcher",
         badge = "Notes",
         accent = helpers.accentForId(recentId),
-        keywords = "notes note recent latest vault 笔记 最近",
+        keywords = "notes note recent latest vault 笔记 最近 最近笔记 最近笔记",
         actions = {
           { id = "open", label = "Browse", primary = true },
         },

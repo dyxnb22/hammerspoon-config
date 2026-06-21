@@ -2,10 +2,33 @@ return function(config, helpers)
   local settings = hs.settings
   local usageKey = "launcherUsage"
   local recentKey = "launcherRecent"
+  local queryIntent = require("query_intent")
 
   local M = {}
   local modules = {}
   local asyncSources = {}  -- name → function(query, callback)
+
+  -- Apply per-group item budgets: items must be pre-ranked; we keep the
+  -- top-N of each kind according to the budget table.
+  local function applyGroupBudgets(items, budgets)
+    local counts = {}
+    local kept = {}
+    for _, item in ipairs(items) do
+      local kind = item.kind or "command"
+      local cap = budgets[kind]
+      if cap == nil then cap = 5 end  -- unknown kinds: conservative default
+      if cap > 0 then
+        counts[kind] = (counts[kind] or 0) + 1
+        if counts[kind] <= cap then
+          table.insert(kept, item)
+        end
+      end
+      -- cap == 0: drop entirely
+    end
+    return kept
+  end
+
+  M.applyGroupBudgets = applyGroupBudgets
 
   local function shellQuote(value)
     return "'" .. tostring(value):gsub("'", "'\\''") .. "'"
@@ -236,6 +259,9 @@ return function(config, helpers)
   end
 
   function M.buildSync(query)
+    local intent = queryIntent.classify(query)
+    local budgets = queryIntent.budgetsFor(intent)
+
     local items = {}
     local handlers = {}
     local rank = 0
@@ -281,6 +307,9 @@ return function(config, helpers)
     end
 
     items = M.rankItems(items, query)
+
+    -- Apply per-group budgets based on classified query intent
+    items = applyGroupBudgets(items, budgets)
 
     local limit = config.launcherResultLimit or 120
     if #items > limit then

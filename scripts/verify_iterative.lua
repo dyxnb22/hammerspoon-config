@@ -47,6 +47,7 @@ for _, moduleName in ipairs({
   "config",
   "helpers",
   "modules_enabled",
+  "query_intent",
   "search_index",
   "launcher_runtime",
   "launcher",
@@ -303,6 +304,7 @@ local function runSyncRound()
   local recentItems = searchIndex.buildSync("recent note")
   check("recent note query returns recent notes command", findItem(recentItems, function(item) return item.id == "notes:recent" end) ~= nil)
   check("recent note query surfaces multiple recent notes", countItems(recentItems, function(item) return item.kind == "note" end) >= 2)
+  check("recent note query suppresses clipboard noise", countItems(recentItems, function(item) return item.kind == "clipboard" end) == 0)
 
   -- Short query noise suppression
   local trItems = searchIndex.buildSync("tr")
@@ -344,6 +346,160 @@ local function runSyncRound()
   local searchIndexSource = helpers.readFile(config.repoRoot .. "/modules/search_index.lua") or ""
   check("search_index has addAsyncSource", searchIndexSource:find("addAsyncSource", 1, true) ~= nil)
   check("search_index has parallel pending counter", searchIndexSource:find("pending", 1, true) ~= nil)
+
+  -- ── Intent Router & Budget ─────────────────────────────────────────────────
+  local queryIntentSource = helpers.readFile(config.repoRoot .. "/modules/query_intent.lua") or ""
+  check("query_intent module exists", #queryIntentSource > 100)
+  check("query_intent has classify function", queryIntentSource:find("function M.classify", 1, true) ~= nil)
+  check("query_intent has budgetsFor function", queryIntentSource:find("function M.budgetsFor", 1, true) ~= nil)
+  check("query_intent has DEFAULT_BUDGETS", queryIntentSource:find("DEFAULT_BUDGETS", 1, true) ~= nil)
+  check("search_index integrates query_intent", searchIndexSource:find("query_intent", 1, true) ~= nil)
+  check("search_index has applyGroupBudgets", searchIndexSource:find("applyGroupBudgets", 1, true) ~= nil)
+
+  -- ── Short query noise suppression ──────────────────────────────────────────
+  local aItems = searchIndex.buildSync("a")
+  check("single-char 'a' avoids todo add noise", findItem(aItems, function(item)
+    return item.id:match("^todo:add:")
+  end) == nil)
+
+  local dItems = searchIndex.buildSync("d")
+  check("single-char 'd' avoids todo add noise", findItem(dItems, function(item)
+    return item.id:match("^todo:add:")
+  end) == nil)
+  check("single-char 'd' avoids notes center noise", findItem(dItems, function(item)
+    return item.id == "notes:center"
+  end) == nil)
+
+  local noItems = searchIndex.buildSync("no")
+  check("two-char 'no' avoids notes center noise", findItem(noItems, function(item)
+    return item.id == "notes:center"
+  end) == nil)
+  check("two-char 'no' avoids notes daily noise", findItem(noItems, function(item)
+    return item.id == "notes:daily"
+  end) == nil)
+
+  -- 'tr' should trigger translate (it's an explicit keyword) but no todo:add
+  local trItems2 = searchIndex.buildSync("tr")
+  check("'tr' prefix triggers translate or hint", findItem(trItems2, function(item)
+    return item.kind == "ai" or item.id:match("^translate:")
+  end) ~= nil)
+
+  -- ── Clipboard intent: paste / copy queries ──────────────────────────────────
+  local pasteItems = searchIndex.buildSync("paste")
+  check("'paste' query returns clipboard items", findItem(pasteItems, function(item)
+    return item.kind == "clipboard" or item.id == "clipboard:clear"
+  end) ~= nil)
+  check("'paste' avoids todo add noise", findItem(pasteItems, function(item)
+    return item.id:match("^todo:add:")
+  end) == nil)
+
+  local copyItems = searchIndex.buildSync("copy")
+  check("'copy' query returns clipboard items", findItem(copyItems, function(item)
+    return item.kind == "clipboard" or item.id == "clipboard:clear"
+  end) ~= nil)
+  check("'copy' avoids todo add noise", findItem(copyItems, function(item)
+    return item.id:match("^todo:add:")
+  end) == nil)
+
+  -- generic query: clipboard should not dominate (budget = 4 by default)
+  local genericItems = searchIndex.buildSync("safari")
+  local clipboardCountInGeneric = countItems(genericItems, function(item)
+    return item.kind == "clipboard"
+  end)
+  check("app-like query limits clipboard items (budget)", clipboardCountInGeneric == 0)
+
+  -- ── Translate scenarios ───────────────────────────────────────────────────
+  local transExplicit = searchIndex.buildSync("translate hello world")
+  check("'translate hello world' returns translate item", findItem(transExplicit, function(item)
+    return item.kind == "ai" and item.id:match("^translate:")
+  end) ~= nil)
+
+  local transZhExplicit = searchIndex.buildSync("翻译 你好")
+  check("'翻译 你好' returns translate item", findItem(transZhExplicit, function(item)
+    return item.kind == "ai" or item.id:match("^translate:")
+  end) ~= nil)
+
+  local helloItems = searchIndex.buildSync("hello world")
+  check("'hello world' offers translate", findItem(helloItems, function(item)
+    return item.id:match("^translate:query:")
+  end) ~= nil)
+
+  -- ── Shell / Calculator ────────────────────────────────────────────────────
+  local shItems = searchIndex.buildSync("sh ls")
+  check("'sh ls' returns shell item", findItem(shItems, function(item)
+    return item.kind == "shell"
+  end) ~= nil)
+  check("'sh ls' avoids todo add noise", findItem(shItems, function(item)
+    return item.id:match("^todo:add:")
+  end) == nil)
+
+  local calcParen, _ = searchIndex.buildSync("(2+3)*4")
+  check("'(2+3)*4' returns calculator", findItem({calcParen}, function(item)
+    return item.kind == "calculator"
+  end) ~= nil or (function()
+    -- buildSync returns (items, handlers), unwrap
+    local items2 = searchIndex.buildSync("(2+3)*4")
+    return findItem(items2, function(item) return item.kind == "calculator" end) ~= nil
+  end)())
+  -- Simpler form:
+  local calcItems2 = searchIndex.buildSync("(2+3)*4")
+  local calcResult = findItem(calcItems2, function(item) return item.kind == "calculator" end)
+  check("'(2+3)*4' calculator result is 20", calcResult and calcResult.title == "20", calcResult and calcResult.title)
+
+  -- ── Todo scenarios ────────────────────────────────────────────────────────
+  local taskInbox = searchIndex.buildSync("task inbox zero")
+  check("'task inbox zero' explicit todo prefix offers create", findItem(taskInbox, function(item)
+    return item.id:match("^todo:add:")
+  end) ~= nil)
+
+  -- ── Notes Chinese scenarios ───────────────────────────────────────────────
+  local zhNotesItems = searchIndex.buildSync("笔记")
+  check("'笔记' query returns notes:center", findItem(zhNotesItems, function(item)
+    return item.id == "notes:center"
+  end) ~= nil)
+
+  local zhRecentItems = searchIndex.buildSync("最近笔记")
+  check("'最近笔记' query returns notes:recent", findItem(zhRecentItems, function(item)
+    return item.id == "notes:recent"
+  end) ~= nil)
+  check("'最近笔记' suppresses clipboard", countItems(zhRecentItems, function(item)
+    return item.kind == "clipboard"
+  end) == 0)
+
+  -- ── Budget enforcement checks ─────────────────────────────────────────────
+  -- calculator intent: only calculator item
+  local calc22 = searchIndex.buildSync("2+2")
+  check("calculator intent shows calculator", findItem(calc22, function(item) return item.kind == "calculator" end) ~= nil)
+  check("calculator intent hides clipboard", countItems(calc22, function(item) return item.kind == "clipboard" end) == 0)
+  check("calculator intent hides AI", countItems(calc22, function(item) return item.kind == "ai" end) == 0)
+
+  -- notes_recent intent: no clipboard items
+  local recentNote2 = searchIndex.buildSync("recent note")
+  check("notes_recent intent: zero clipboard items", countItems(recentNote2, function(item)
+    return item.kind == "clipboard"
+  end) == 0)
+  check("notes_recent intent: zero AI items", countItems(recentNote2, function(item)
+    return item.kind == "ai"
+  end) == 0)
+
+  -- ── Edge: empty clipboard shows nothing ──────────────────────────────────
+  local savedClipboard = hs.settings.get("clipboardHistory")
+  hs.settings.set("clipboardHistory", {})
+  local emptyClipModule = require("clipboard")(config, helpers)
+  searchIndex.registerModules(vim ~= nil and modules or { clipboard = emptyClipModule })
+  local emptyClipResults = emptyClipModule.indexContributions("")
+  check("empty clipboard history returns no clipboard items", countItems(emptyClipResults, function(item)
+    return item.kind == "clipboard"
+  end) == 0)
+  if savedClipboard ~= nil then hs.settings.set("clipboardHistory", savedClipboard) end
+  -- Restore original modules registration
+  searchIndex.registerModules(modules)
+
+  -- ── Apple Music (multi-word app lookup) ──────────────────────────────────
+  local musicItems = searchIndex.buildSync("apple music")
+  check("'apple music' finds Music app via alias", findItem(musicItems, function(item)
+    return item.kind == "app" and item.title:lower():find("music", 1, true)
+  end) ~= nil)
 end
 
 local function runExtendedRound()

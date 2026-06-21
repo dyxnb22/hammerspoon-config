@@ -90,8 +90,10 @@ return function(config, helpers)
   function M.indexContributions(query)
     local items = {}
     local handlers = {}
+    local normalizedQuery = helpers.normalizeText(query)
+    local clipboardMode = helpers.matchQuery(query, "clipboard", "history", "paste", "copy")
 
-    if helpers.matchQuery(query, "clipboard", "history", "paste") then
+    if clipboardMode then
       local clearId = "clipboard:clear"
       table.insert(items, {
         id = clearId,
@@ -100,7 +102,7 @@ return function(config, helpers)
         subtitle = "Remove all saved clipboard items",
         badge = "Clipboard",
         accent = helpers.accentForId(clearId),
-        keywords = "clipboard history clear",
+        keywords = "clipboard history clear paste copy",
         actions = {
           { id = "open", label = "Clear All", primary = true },
         },
@@ -109,11 +111,17 @@ return function(config, helpers)
       handlers[clearId .. ":open"] = M.clear
     end
 
-    local maxVisible = helpers.normalizeText(query) and #clipboardHistory or math.min(12, #clipboardHistory)
+    local maxVisible = normalizedQuery and #clipboardHistory or math.min(12, #clipboardHistory)
     for index = 1, maxVisible do
       local text = clipboardHistory[index]
       local preview = helpers.previewText(text, 80)
-      if helpers.matchQuery(query, preview, text) then
+      -- In clipboard mode (paste/copy/clipboard/history query) show all items;
+      -- otherwise filter by content match.
+      local matchesClipboardItem = not normalizedQuery
+        or clipboardMode
+        or (#normalizedQuery >= 3 and helpers.matchQuery(query, preview))
+
+      if matchesClipboardItem then
         local id = "clipboard:" .. index
         table.insert(items, {
           id = id,
@@ -122,7 +130,7 @@ return function(config, helpers)
           subtitle = "Clipboard history",
           badge = "Clipboard",
           accent = helpers.accentForId(id),
-          keywords = text,
+          keywords = text .. " clipboard paste copy history",
           actions = {
             { id = "paste", label = "Paste", primary = true },
             { id = "copy", label = "Copy Again" },
