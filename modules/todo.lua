@@ -1,7 +1,6 @@
 return function(config, helpers)
   local M = {}
-
-  local chooser = nil
+  local refreshLauncher = nil
 
   local function loadTodos()
     helpers.ensureDir(config.dataDir)
@@ -18,167 +17,130 @@ return function(config, helpers)
       if left.done ~= right.done then
         return not left.done
       end
-
       return (left.updatedAt or 0) > (right.updatedAt or 0)
     end)
   end
 
-  local function buildChoices(query)
+  function M.setRefreshHandler(fn)
+    refreshLauncher = fn
+  end
+
+  local function afterChange()
+    if refreshLauncher then
+      refreshLauncher()
+    end
+  end
+
+  function M.addTodo(text)
+    local normalized = helpers.normalizeText(text)
+    if not normalized then
+      hs.alert.show("TODO cannot be empty")
+      return false
+    end
+
+    local todos = loadTodos()
+    table.insert(todos, 1, {
+      id = tostring(os.time()) .. "-" .. tostring(math.random(1000, 9999)),
+      text = normalized,
+      done = false,
+      updatedAt = os.time(),
+    })
+    saveTodos(todos)
+    hs.alert.show("TODO saved")
+    afterChange()
+    return true
+  end
+
+  function M.indexContributions(query)
+    local items = {}
+    local handlers = {}
     local todos = loadTodos()
     sortTodos(todos)
-
-    local choices = {}
     local normalizedQuery = helpers.normalizeText(query)
+    local likelyTaskText = normalizedQuery
+      and (
+        normalizedQuery:find("%s")
+        or normalizedQuery:find("[\128-\255]")
+        or normalizedQuery:match("^todo%s+")
+      )
+    local shouldOfferCreate = normalizedQuery
+      and #normalizedQuery >= 2
+      and likelyTaskText
+      and not normalizedQuery:match("^!")
+      and not normalizedQuery:match("^sh%s+")
+      and not normalizedQuery:match("^shell%s+")
+      and not normalizedQuery:match("^[%d%s%+%-%*%/%(%)%.,]+$")
 
-    if normalizedQuery then
-      table.insert(choices, {
-        text = "Add: " .. normalizedQuery,
-        subText = "Press Enter to create this task",
-        action = "add",
-        value = normalizedQuery,
+    if shouldOfferCreate then
+      local addId = "todo:add:" .. helpers.hashString(normalizedQuery)
+      table.insert(items, {
+        id = addId,
+        kind = "todo",
+        title = "Add: " .. normalizedQuery,
+        subtitle = "Create a new task",
+        badge = "TODO",
+        accent = helpers.accentForId(addId),
+        keywords = normalizedQuery,
+        actions = {
+          { id = "open", label = "Add Task", primary = true },
+        },
       })
-    else
-      table.insert(choices, {
-        text = "Type above to add a new task",
-        subText = "Enter creates the task from the search box",
-        action = "noop",
-      })
+      handlers[addId] = function()
+        M.addTodo(normalizedQuery)
+      end
+      handlers[addId .. ":open"] = handlers[addId]
     end
 
     for _, todo in ipairs(todos) do
-      table.insert(choices, {
-        text = (todo.done and "[Done] " or "[Todo] ") .. todo.text,
-        subText = todo.done and "Enter reopens · choose to toggle/delete/copy" or "Enter reopens · choose to toggle/delete/copy",
-        action = "todo",
-        todoId = todo.id,
-      })
-    end
+      local label = (todo.done and "[Done] " or "[Todo] ") .. todo.text
+      if helpers.matchQuery(query, label, todo.text, "todo task") then
+        local id = "todo:" .. todo.id
+        table.insert(items, {
+          id = id,
+          kind = "todo",
+          title = label,
+          subtitle = todo.done and "Completed task" or "Open task",
+          badge = "TODO",
+          accent = helpers.accentForId(id),
+          keywords = todo.text,
+          actions = {
+            { id = "toggle", label = todo.done and "Mark Todo" or "Mark Done", primary = true },
+            { id = "copy", label = "Copy Text" },
+            { id = "delete", label = "Delete" },
+          },
+        })
 
-    return choices, todos
-  end
-
-  local function handleTodoChoice(choice, todos)
-    if choice.action == "add" then
-      local text = helpers.normalizeText(choice.value)
-      if not text then
-        hs.alert.show("TODO cannot be empty")
-        M.openChooser(choice.query)
-        return
-      end
-
-      table.insert(todos, 1, {
-        id = tostring(os.time()) .. "-" .. tostring(math.random(1000, 9999)),
-        text = text,
-        done = false,
-        updatedAt = os.time(),
-      })
-      saveTodos(todos)
-      hs.alert.show("TODO saved")
-      M.openChooser("")
-      return
-    end
-
-    if choice.action ~= "todo" then
-      return
-    end
-
-    local selected = nil
-    for _, todo in ipairs(todos) do
-      if todo.id == choice.todoId then
-        selected = todo
-        break
-      end
-    end
-
-    if not selected then
-      return
-    end
-
-    helpers.chooseFromList("TODO action", {
-      {
-        text = selected.done and "Mark As Todo" or "Mark As Done",
-        subText = "Toggle this task status",
-        action = "toggle",
-      },
-      {
-        text = "Delete TODO",
-        subText = "Remove this task permanently",
-        action = "delete",
-      },
-      {
-        text = "Copy TODO Text",
-        subText = "Copy task text to clipboard",
-        action = "copy",
-      },
-    }, function(actionChoice)
-      if actionChoice.action == "toggle" then
-        selected.done = not selected.done
-        selected.updatedAt = os.time()
-        saveTodos(todos)
-        hs.alert.show(selected.done and "Marked done" or "Marked todo")
-      elseif actionChoice.action == "delete" then
-        for index, item in ipairs(todos) do
-          if item.id == selected.id then
-            table.remove(todos, index)
-            break
+        handlers[id] = function()
+          todo.done = not todo.done
+          todo.updatedAt = os.time()
+          saveTodos(todos)
+          hs.alert.show(todo.done and "Marked done" or "Marked todo")
+          afterChange()
+        end
+        handlers[id .. ":toggle"] = handlers[id]
+        handlers[id .. ":copy"] = function()
+          hs.pasteboard.setContents(todo.text)
+          hs.alert.show("Copied")
+        end
+        handlers[id .. ":delete"] = function()
+          for index, item in ipairs(todos) do
+            if item.id == todo.id then
+              table.remove(todos, index)
+              break
+            end
           end
+          saveTodos(todos)
+          hs.alert.show("Deleted TODO")
+          afterChange()
         end
-        saveTodos(todos)
-        hs.alert.show("Deleted TODO")
-      elseif actionChoice.action == "copy" then
-        hs.pasteboard.setContents(selected.text)
-        hs.alert.show("Copied")
       end
-
-      M.openChooser("")
-    end)
-  end
-
-  function M.openChooser(seedQuery)
-    if not chooser then
-      chooser = hs.chooser.new(function(choice)
-        if not choice then
-          return
-        end
-
-        local query = chooser:query()
-        local _, todos = buildChoices(query)
-        choice.query = query
-
-        if choice.action == "noop" then
-          M.openChooser(query)
-          return
-        end
-
-        handleTodoChoice(choice, todos)
-      end)
-
-      chooser:searchSubText(true)
-      chooser:placeholderText("TODO")
-      chooser:queryChangedCallback(function()
-        local query = chooser:query()
-        chooser:choices(buildChoices(query))
-      end)
     end
 
-    chooser:choices(buildChoices(seedQuery or ""))
-    if seedQuery then
-      chooser:query(seedQuery)
-    end
-    chooser:show()
+    return items, handlers
   end
 
   function M.launcherCommands()
-    return {
-      {
-        id = "todo",
-        text = "TODO",
-        subText = "Capture, toggle, and clean up tasks",
-        run = function()
-          M.openChooser(helpers.textFromSelectionOrClipboard() or "")
-        end,
-      },
-    }
+    return {}
   end
 
   return M

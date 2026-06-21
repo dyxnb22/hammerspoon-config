@@ -7,6 +7,29 @@ return {
   dataDir = hs.configdir,
   todoFile = hs.configdir .. "/todos.json",
   clipboardLimit = 80,
+  searchFileLimit = 20,
+  launcherResultLimit = 120,
+  searchRoots = {
+    os.getenv("HOME") .. "/Documents",
+    os.getenv("HOME") .. "/Downloads",
+    os.getenv("HOME") .. "/Desktop",
+  },
+  quickLinks = {
+    {
+      title = "GitHub",
+      url = "https://github.com",
+      keywords = "code repo",
+    },
+    {
+      title = "Google",
+      url = "https://google.com",
+      keywords = "search web",
+    },
+  },
+  snippets = {
+    { title = "Email", text = "hello@example.com", keywords = "mail" },
+    { title = "Standup", text = "Yesterday / Today / Blockers", keywords = "meeting" },
+  },
   hyper = { "ctrl", "alt", "cmd" },
   entryHotkey = { modifiers = { "cmd", "shift" }, key = "space" },
   launcherFallbackHotkey = { modifiers = { "ctrl", "alt", "cmd" }, key = "space" },

@@ -4,6 +4,7 @@ return function(config, helpers)
   local currentIndex = nil
   local indexLoadedAt = 0
   local homeHandler = nil
+  local launcherToggle = nil
 
   local M = {}
 
@@ -240,7 +241,13 @@ Use the graph view to explore note links, or search by title and tags.
     hs.hotkey.bind(hotkeys.center.modifiers, hotkeys.center.key, function()
       M.open({ toggle = true })
     end)
-    hs.hotkey.bind(hotkeys.recent.modifiers, hotkeys.recent.key, M.openRecentChooser)
+    hs.hotkey.bind(hotkeys.recent.modifiers, hotkeys.recent.key, function()
+      if launcherToggle then
+        launcherToggle("note")
+      else
+        M.open({ toggle = true })
+      end
+    end)
     hs.hotkey.bind(hotkeys.newDaily.modifiers, hotkeys.newDaily.key, function()
       local path = M.newDailyNote()
       M.openInTypora(path)
@@ -256,32 +263,99 @@ Use the graph view to explore note links, or search by title and tags.
     homeHandler = handler
   end
 
+  function M.setLauncherWithQueryHandler(fn)
+    launcherToggle = fn
+  end
+
+  function M.indexContributions(query)
+    local items = {}
+    local handlers = {}
+    -- Use in-memory cache; only read from disk if not yet loaded
+    local index = currentIndex
+    if not index then
+      index = helpers.readJsonFile(config.notes.indexFile, { recent = {}, nodes = {} })
+      if index and (index.nodes or index.recent) then
+        currentIndex = index
+        indexLoadedAt = os.time()
+      end
+    end
+
+    if helpers.matchQuery(query, "notes", "note", "vault", "typora", "markdown") then
+      local centerId = "notes:center"
+      table.insert(items, {
+        id = centerId,
+        kind = "command",
+        title = "Notes Center",
+        subtitle = "Browse vault, graph, and search",
+        badge = "Notes",
+        accent = helpers.accentForId(centerId),
+        keywords = "notes vault typora markdown",
+        actions = {
+          { id = "open", label = "Open", primary = true },
+        },
+      })
+      handlers[centerId] = function()
+        M.open({ toggle = false })
+      end
+      handlers[centerId .. ":open"] = handlers[centerId]
+    end
+
+    if helpers.matchQuery(query, "notes", "note", "daily", "journal", "today", "笔记", "日记") then
+      local dailyId = "notes:daily"
+      table.insert(items, {
+        id = dailyId,
+        kind = "command",
+        title = "New Daily Note",
+        subtitle = "Create or open today's journal",
+        badge = "Notes",
+        accent = helpers.accentForId(dailyId),
+        keywords = "daily journal note today 日记 笔记",
+        actions = {
+          { id = "open", label = "Open", primary = true },
+        },
+      })
+      handlers[dailyId] = function()
+        local path = M.newDailyNote()
+        M.openInTypora(path)
+      end
+      handlers[dailyId .. ":open"] = handlers[dailyId]
+    end
+
+    for _, item in ipairs(index.recent or {}) do
+      local tagsText = ""
+      if type(item.tags) == "table" then
+        tagsText = table.concat(item.tags, " ")
+      end
+      if helpers.matchQuery(query, item.title, item.path, tagsText) then
+        local id = "note:" .. helpers.hashString(item.path)
+        table.insert(items, {
+          id = id,
+          kind = "note",
+          title = item.title,
+          subtitle = item.path,
+          badge = "Note",
+          accent = helpers.accentForId(id),
+          keywords = table.concat({ item.title, item.path, tagsText }, " "),
+          actions = {
+            { id = "open", label = "Open in Typora", primary = true },
+            { id = "reveal", label = "Reveal in Finder" },
+          },
+        })
+        handlers[id] = function()
+          M.openInTypora(item.path)
+        end
+        handlers[id .. ":open"] = handlers[id]
+        handlers[id .. ":reveal"] = function()
+          hs.execute("open -R " .. shellQuote(item.path))
+        end
+      end
+    end
+
+    return items, handlers
+  end
+
   function M.launcherCommands()
-    return {
-      {
-        id = "notes",
-        text = "Notes Center",
-        subText = "Browse vault, graph links, and open in Typora",
-        run = function()
-          M.open({ toggle = false })
-        end,
-      },
-      {
-        id = "notes-recent",
-        text = "Recent Notes",
-        subText = "Open a recently edited markdown note",
-        run = M.openRecentChooser,
-      },
-      {
-        id = "notes-daily",
-        text = "New Daily Note",
-        subText = "Create or open today's journal note",
-        run = function()
-          local path = M.newDailyNote()
-          M.openInTypora(path)
-        end,
-      },
-    }
+    return {}
   end
 
   return M

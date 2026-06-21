@@ -4,11 +4,10 @@
 
 Responsibilities:
 
-- Ordered visible windows
-- Recent apps inferred from recent windows
-- Window movement helpers
-- Window chooser
-- App chooser
+- Ordered visible windows and recent apps
+- Installed app catalog (shown when searching)
+- Window layout presets (left/right/max/center/screen move)
+- `indexContributions()` for launcher search
 
 ## clipboard
 
@@ -16,40 +15,57 @@ Responsibilities:
 
 - Clipboard watcher lifecycle
 - Clipboard history persistence in `hs.settings`
-- Copy again, paste, delete, clear actions
+- Snippets from `config.snippets`
+- Paste, copy again, delete, clear via launcher actions
 
 ## translate
 
 Responsibilities:
 
-- Pull selected text or clipboard text
-- Translate through Google Translate endpoint
-- Copy translated result
-- Show translation result chooser
+- Translate selection, clipboard, or typed query
+- Google Translate endpoint with browser fallback
+- Last translation surfaced in launcher (no `hs.dialog`)
 
 ## todo
 
 Responsibilities:
 
-- Load and save TODO data
-- Keep TODO data in `~/.hammerspoon/todos.json`
-- Add, toggle, delete, and copy task text
+- Load and save TODO data in `~/.hammerspoon/todos.json`
+- Inline add via launcher search query
+- Toggle, delete, and copy via launcher actions
+
+## system
+
+Responsibilities:
+
+- System toggles (DND, Night Shift, dark mode, low power)
+- Shell command panel (`! cmd`, `sh cmd`)
+- `indexContributions()` for launcher search
 
 ## launcher
 
 Responsibilities:
 
-- Open/toggle the launcher webview
-- Wrap actions with usage tracking
-- Bridge layout save messages to runtime
+- Open/toggle the unified Spotlight-style webview
+- Debounced search bridge to runtime/index layer
+- Actions pane with `⌘K` / arrow navigation
+- Refresh after in-panel mutations (todo, clipboard, translate)
 
 ## launcher_runtime
 
 Responsibilities:
 
-- Build launcher items/actions from module registrations
-- Stable layout persistence and usage tracking
-- Short-lived cache for window/app snapshots
+- Orchestrate sync + async index builds
+- Layout persistence and usage tracking
+- Module hotkey binding passthrough
+
+## search_index
+
+Responsibilities:
+
+- Aggregate `indexContributions()` from all modules
+- Rank by prefix match, token hit, usage, and recency
+- Calculator, quick links, and async `mdfind` file search
 
 ## webview_panel
 
@@ -57,6 +73,7 @@ Responsibilities:
 
 - Shared webview lifecycle for launcher and notes
 - Parse `message.body` from JavaScript callbacks
+- Primary and secondary actions (`id` + `actionId`, optional `keepOpen`)
 - Singleton panel instances per channel
 
 ## notes_scanner

@@ -100,10 +100,18 @@ local function createPanel(config, helpers, options)
       end
 
       if payload.type == "run" and payload.id then
-        hide()
-        local action = panel.actions[payload.id]
+        local key = payload.id
+        if payload.actionId and payload.actionId ~= "" then
+          key = payload.id .. ":" .. payload.actionId
+        end
+
+        local action = panel.actions[key] or panel.actions[payload.id]
+        if not payload.keepOpen then
+          hide()
+        end
+
         if action then
-          hs.timer.doAfter(0.08, action)
+          hs.timer.doAfter(payload.keepOpen and 0.02 or 0.08, action)
         end
         return
       end
@@ -124,6 +132,10 @@ local function createPanel(config, helpers, options)
       :behaviorAsLabels({ "canJoinAllSpaces", "fullScreenAuxiliary", "ignoresCycle" })
 
     panel.view:html(readHtml())
+  end
+
+  function panel.setActions(actions)
+    panel.actions = actions or {}
   end
 
   function panel.hide()

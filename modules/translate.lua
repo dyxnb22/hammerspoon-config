@@ -1,6 +1,12 @@
 return function(_, helpers)
   local M = {}
   local json = hs.json
+  local refreshLauncher = nil
+  local lastResult = nil
+
+  function M.setRefreshHandler(fn)
+    refreshLauncher = fn
+  end
 
   local function cjkRatio(text)
     local total = 0
@@ -27,30 +33,11 @@ return function(_, helpers)
     if cjkRatio(text) >= 0.2 then
       return "en"
     end
-
     return "zh-CN"
   end
 
-  local function showResult(source, translated)
-    helpers.chooseFromList("Translation", {
-      {
-        text = translated,
-        subText = "Copied to clipboard",
-        action = "copy",
-      },
-      {
-        text = source,
-        subText = "Original text",
-        action = "noop",
-      },
-    }, function(choice)
-      if choice.action == "copy" then
-        hs.pasteboard.setContents(translated)
-      end
-    end)
-  end
-
-  function M.translateText(text)
+  function M.translateText(text, options)
+    options = options or {}
     local normalized = helpers.normalizeText(text)
     if not normalized then
       hs.alert.show("No text to translate")
@@ -65,7 +52,13 @@ return function(_, helpers)
 
     hs.http.asyncGet(url, nil, function(status, body)
       if status ~= 200 then
-        hs.urlevent.openURL("https://translate.google.com/?sl=auto&tl=" .. target .. "&text=" .. hs.http.encodeForQuery(normalized) .. "&op=translate")
+        hs.urlevent.openURL(
+          "https://translate.google.com/?sl=auto&tl="
+            .. target
+            .. "&text="
+            .. hs.http.encodeForQuery(normalized)
+            .. "&op=translate"
+        )
         hs.alert.show("Opened Google Translate in browser")
         return
       end
@@ -89,36 +82,133 @@ return function(_, helpers)
         return
       end
 
-      hs.pasteboard.setContents(result)
-      hs.alert.show("Translated and copied")
-      showResult(normalized, result)
+      lastResult = {
+        source = normalized,
+        translated = result,
+        target = target,
+      }
+
+      if options.copy ~= false then
+        hs.pasteboard.setContents(result)
+        hs.alert.show("Translated and copied")
+      end
+
+      if refreshLauncher then
+        refreshLauncher()
+      end
     end)
   end
 
-  function M.prompt()
-    local defaultText = helpers.textFromSelectionOrClipboard() or ""
-    local button, text = hs.dialog.textPrompt(
-      "Google Translate",
-      "Translate the selected text or edit it first",
-      defaultText,
-      "Translate",
-      "Cancel"
-    )
+  function M.indexContributions(query)
+    local items = {}
+    local handlers = {}
+    local normalizedQuery = helpers.normalizeText(query)
+    local explicitTranslate = helpers.matchQuery(query, "translate", "tr", "翻译")
+    local sentenceLike = normalizedQuery
+      and #normalizedQuery >= 4
+      and (normalizedQuery:find("%s") or cjkRatio(normalizedQuery) >= 0.2)
 
-    if button == "Translate" then
-      M.translateText(text)
+    if normalizedQuery and #normalizedQuery >= 2 and (explicitTranslate or sentenceLike) then
+      local id = "translate:query:" .. helpers.hashString(normalizedQuery)
+      table.insert(items, {
+          id = id,
+        kind = "ai",
+        title = "Translate: " .. helpers.previewText(normalizedQuery, 48),
+        subtitle = "Google Translate",
+        badge = "Translate",
+        accent = helpers.accentForId(id),
+        keywords = "translate tr " .. normalizedQuery,
+        actions = {
+          { id = "run", label = "Translate", primary = true },
+        },
+      })
+      handlers[id] = function()
+        M.translateText(normalizedQuery)
+      end
+      handlers[id .. ":run"] = handlers[id]
     end
+
+    local selection = nil
+    local ok, value = pcall(helpers.textFromSelectionOrClipboard)
+    if ok then
+      selection = value
+    end
+
+    if selection and (not normalizedQuery or normalizedQuery == "") then
+      local id = "translate:selection"
+      table.insert(items, {
+        id = id,
+        kind = "ai",
+        title = "Translate Selection",
+        subtitle = helpers.previewText(selection, 60),
+        badge = "Translate",
+        accent = helpers.accentForId(id),
+        keywords = "translate selection clipboard " .. selection,
+        actions = {
+          { id = "run", label = "Translate", primary = true },
+        },
+      })
+      handlers[id] = function()
+        M.translateText(selection)
+      end
+      handlers[id .. ":run"] = handlers[id]
+    end
+
+    if lastResult then
+      local id = "translate:last"
+      table.insert(items, {
+        id = id,
+        kind = "ai",
+        title = helpers.previewText(lastResult.translated, 72),
+        subtitle = "Last translation · " .. helpers.previewText(lastResult.source, 40),
+        badge = "Translation",
+        accent = helpers.accentForId(id),
+        keywords = lastResult.source .. " " .. lastResult.translated,
+        actions = {
+          { id = "copy", label = "Copy Translation", primary = true },
+          { id = "open", label = "Open in Browser" },
+        },
+      })
+      handlers[id] = function()
+        hs.pasteboard.setContents(lastResult.translated)
+        hs.alert.show("Copied")
+      end
+      handlers[id .. ":copy"] = handlers[id]
+      handlers[id .. ":open"] = function()
+        hs.urlevent.openURL(
+          "https://translate.google.com/?sl=auto&tl="
+            .. (lastResult.target or "en")
+            .. "&text="
+            .. hs.http.encodeForQuery(lastResult.source)
+            .. "&op=translate"
+        )
+      end
+    end
+
+    if explicitTranslate and not normalizedQuery then
+      local id = "translate:hint"
+      table.insert(items, {
+        id = id,
+        kind = "ai",
+        title = "Type text to translate",
+        subtitle = "Or select text before opening launcher",
+        badge = "Translate",
+        accent = helpers.accentForId(id),
+        keywords = "translate tr",
+        actions = {
+          { id = "open", label = "Info", primary = true },
+        },
+      })
+      handlers[id] = function()
+        hs.alert.show("Type text in the search box to translate")
+      end
+    end
+
+    return items, handlers
   end
 
   function M.launcherCommands()
-    return {
-      {
-        id = "translate",
-        text = "Google Translate",
-        subText = "Translate selected text or clipboard text",
-        run = M.prompt,
-      },
-    }
+    return {}
   end
 
   return M

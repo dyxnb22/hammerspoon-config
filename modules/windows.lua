@@ -1,8 +1,5 @@
 return function(config, helpers)
   local M = {}
-  local appCatalogCache = nil
-  local appCatalogBuiltAt = 0
-  local appCatalogTtl = 120
 
   local function pathJoin(base, name)
     if string.sub(base, -1) == "/" then
@@ -112,6 +109,10 @@ return function(config, helpers)
     end
   end
 
+  local appCatalogCache = nil
+  local appCatalogBuiltAt = 0
+  local appCatalogTtl = 120
+
   function M.installedApps()
     local now = os.time()
     if appCatalogCache and (now - appCatalogBuiltAt) < appCatalogTtl then
@@ -216,198 +217,132 @@ return function(config, helpers)
     end
   end
 
-  function M.launcherItems(makeItem)
+  local layoutPresets = {
+    { id = "left", text = "Window Left Half", subText = "Move focused window left", run = function() M.moveTo("left") end },
+    { id = "right", text = "Window Right Half", subText = "Move focused window right", run = function() M.moveTo("right") end },
+    { id = "top", text = "Window Top Half", subText = "Move focused window top", run = function() M.moveTo("top") end },
+    { id = "bottom", text = "Window Bottom Half", subText = "Move focused window bottom", run = function() M.moveTo("bottom") end },
+    { id = "maximize", text = "Window Maximize", subText = "Fill the screen", run = function() M.moveTo("max") end },
+    { id = "center", text = "Window Center", subText = "Resize and center", run = M.centerFocusedWindow },
+    { id = "screen-left", text = "Move To Left Screen", subText = "Send window left", run = function() M.moveToAdjacentScreen("left") end },
+    { id = "screen-right", text = "Move To Right Screen", subText = "Send window right", run = function() M.moveToAdjacentScreen("right") end },
+  }
+
+  function M.indexContributions(query)
     local items = {}
-    local actions = {}
+    local handlers = {}
     local seenApps = {}
 
     for _, window in ipairs(M.orderedWindows()) do
       local app = window:application()
       local appName = app and app:name() or "Unknown App"
       local actionId = stableWindowId(window, app)
+      local title = window:title()
 
-      actions[actionId] = function()
-        window:focus()
+      if helpers.matchQuery(query, title, appName, "window switch") then
+        table.insert(items, {
+          id = actionId,
+          kind = "window",
+          title = title,
+          subtitle = appName,
+          badge = "Window",
+          accent = helpers.accentForId(actionId),
+          keywords = table.concat({ title, appName, "window" }, " "),
+          actions = {
+            { id = "focus", label = "Focus", primary = true },
+          },
+        })
+        handlers[actionId] = function()
+          window:focus()
+        end
+        handlers[actionId .. ":focus"] = handlers[actionId]
       end
-
-      table.insert(items, makeItem(
-        actionId,
-        "window",
-        window:title(),
-        appName,
-        "Recent Window"
-      ))
     end
 
     for _, app in ipairs(M.recentAppsFromWindows()) do
       local actionId = stableAppId(app)
       local key = app:bundleID() or app:name()
       seenApps[key] = true
+      local name = app:name()
 
-      actions[actionId] = function()
-        app:activate()
-      end
-
-      local item = makeItem(
-        actionId,
-        "app",
-        app:name(),
-        "Switch to app",
-        "Recent App"
-      )
-      item.searchText = table.concat({
-        app:name() or "",
-        app:bundleID() or "",
-      }, " ")
-      table.insert(items, item)
-    end
-
-    for _, app in ipairs(M.installedApps()) do
-      local dedupeKey = app.name
-      if not seenApps[dedupeKey] and not seenApps[app.path] then
-        seenApps[dedupeKey] = true
-        seenApps[app.path] = true
-
-        actions[app.id] = function()
-          if hs.application.launchOrFocus(app.name) then
-            return
-          end
-          hs.execute("/usr/bin/open -a " .. shellQuote(app.path))
+      if helpers.matchQuery(query, name, app:bundleID(), "app switch") then
+        table.insert(items, {
+          id = actionId,
+          kind = "app",
+          title = name,
+          subtitle = "Switch to app",
+          badge = "App",
+          accent = helpers.accentForId(actionId),
+          keywords = table.concat({ name, app:bundleID() or "", "app" }, " "),
+          actions = {
+            { id = "open", label = "Switch", primary = true },
+          },
+        })
+        handlers[actionId] = function()
+          app:activate()
         end
-
-        local item = makeItem(
-          app.id,
-          "app",
-          app.name,
-          "Launch installed app",
-          "Application"
-        )
-        item.searchText = table.concat({
-          app.name or "",
-          app.alias or "",
-          app.path or "",
-        }, " ")
-        table.insert(items, item)
+        handlers[actionId .. ":open"] = handlers[actionId]
       end
     end
 
-    return items, actions
+    local normalizedQuery = helpers.normalizeText(query)
+    if normalizedQuery and #normalizedQuery >= 2 then
+      for _, app in ipairs(M.installedApps()) do
+        local dedupeKey = app.name
+        if not seenApps[dedupeKey] and not seenApps[app.path] then
+          seenApps[dedupeKey] = true
+          seenApps[app.path] = true
+
+          if helpers.matchQuery(query, app.name, app.alias, app.path, "application launch") then
+            table.insert(items, {
+              id = app.id,
+              kind = "app",
+              title = app.name,
+              subtitle = "Launch application",
+              badge = "Application",
+              accent = helpers.accentForId(app.id),
+              keywords = table.concat({ app.name, app.alias or "", app.path or "" }, " "),
+              actions = {
+                { id = "open", label = "Launch", primary = true },
+              },
+            })
+            handlers[app.id] = function()
+              if hs.application.launchOrFocus(app.name) then
+                return
+              end
+              hs.execute("/usr/bin/open -a " .. shellQuote(app.path))
+            end
+            handlers[app.id .. ":open"] = handlers[app.id]
+          end
+        end
+      end
+    end
+
+    for _, preset in ipairs(layoutPresets) do
+      if helpers.matchQuery(query, preset.text, preset.subText, "window layout") then
+        local id = "command-" .. preset.id
+        table.insert(items, {
+          id = id,
+          kind = "command",
+          title = preset.text,
+          subtitle = preset.subText,
+          badge = "Layout",
+          accent = helpers.accentForId(id),
+          keywords = preset.text .. " window layout",
+          actions = {
+            { id = "open", label = "Run", primary = true },
+          },
+        })
+        handlers[id] = preset.run
+        handlers[id .. ":open"] = preset.run
+      end
+    end
+
+    return items, handlers
   end
 
   function M.launcherCommands()
-    return {
-      {
-        id = "windows",
-        text = "Switch Window",
-        subText = "Jump to an open window",
-        run = M.switchWindowChooser,
-      },
-      {
-        id = "apps",
-        text = "Switch App",
-        subText = "Jump to a recent app",
-        run = M.switchAppChooser,
-      },
-      {
-        id = "left",
-        text = "Window Left Half",
-        subText = "Move the focused window to the left half",
-        run = function()
-          M.moveTo("left")
-        end,
-      },
-      {
-        id = "right",
-        text = "Window Right Half",
-        subText = "Move the focused window to the right half",
-        run = function()
-          M.moveTo("right")
-        end,
-      },
-      {
-        id = "top",
-        text = "Window Top Half",
-        subText = "Move the focused window to the top half",
-        run = function()
-          M.moveTo("top")
-        end,
-      },
-      {
-        id = "bottom",
-        text = "Window Bottom Half",
-        subText = "Move the focused window to the bottom half",
-        run = function()
-          M.moveTo("bottom")
-        end,
-      },
-      {
-        id = "maximize",
-        text = "Window Maximize",
-        subText = "Expand the focused window to fill the screen",
-        run = function()
-          M.moveTo("max")
-        end,
-      },
-      {
-        id = "center",
-        text = "Window Center",
-        subText = "Resize and center the focused window",
-        run = M.centerFocusedWindow,
-      },
-      {
-        id = "screen-left",
-        text = "Move Window To Left Screen",
-        subText = "Send focused window to the screen on the left",
-        run = function()
-          M.moveToAdjacentScreen("left")
-        end,
-      },
-      {
-        id = "screen-right",
-        text = "Move Window To Right Screen",
-        subText = "Send focused window to the screen on the right",
-        run = function()
-          M.moveToAdjacentScreen("right")
-        end,
-      },
-    }
-  end
-
-  function M.switchWindowChooser()
-    local choices = {}
-
-    for _, window in ipairs(M.orderedWindows()) do
-      local app = window:application()
-      local appName = app and app:name() or "Unknown App"
-
-      table.insert(choices, {
-        text = window:title(),
-        subText = appName,
-        image = app and helpers.safeIcon(app) or nil,
-        window = window,
-      })
-    end
-
-    helpers.chooseFromList("Switch window", choices, function(choice)
-      choice.window:focus()
-    end)
-  end
-
-  function M.switchAppChooser()
-    local choices = {}
-
-    for _, app in ipairs(M.recentAppsFromWindows()) do
-      table.insert(choices, {
-        text = app:name(),
-        subText = app:bundleID() or "Running application",
-        image = helpers.safeIcon(app),
-        app = app,
-      })
-    end
-
-    helpers.chooseFromList("Switch app", choices, function(choice)
-      choice.app:activate()
-    end)
+    return {}
   end
 
   return M

@@ -6,6 +6,7 @@ return function(config, helpers)
   local lastClipboardValue = helpers.normalizeText(hs.pasteboard.getContents())
   local watcher = nil
   local persistTimer = nil
+  local refreshLauncher = nil
 
   local function persist()
     settings.set("clipboardHistory", clipboardHistory)
@@ -17,6 +18,10 @@ return function(config, helpers)
       persistTimer:stop()
     end
     persistTimer = hs.timer.doAfter(0.3, persist)
+  end
+
+  function M.setRefreshHandler(fn)
+    refreshLauncher = fn
   end
 
   function M.push(text)
@@ -52,7 +57,9 @@ return function(config, helpers)
     clipboardHistory = {}
     schedulePersist()
     hs.alert.show("Clipboard history cleared")
-    M.openChooser()
+    if refreshLauncher then
+      refreshLauncher()
+    end
   end
 
   function M.copyAgain(text)
@@ -75,79 +82,97 @@ return function(config, helpers)
     table.remove(clipboardHistory, index)
     schedulePersist()
     hs.alert.show("Deleted")
-    M.openChooser()
+    if refreshLauncher then
+      refreshLauncher()
+    end
   end
 
-  local function buildChoices()
-    local choices = {
-      {
-        text = "Clear Clipboard History",
-        subText = "Remove all saved clipboard items",
-        action = "clear",
-      },
-    }
+  function M.indexContributions(query)
+    local items = {}
+    local handlers = {}
 
-    for index, item in ipairs(clipboardHistory) do
-      table.insert(choices, {
-        text = helpers.previewText(item, 80),
-        subText = "Enter paste · Shift+Enter copy again · Delete remove",
-        action = "item",
-        index = index,
-        value = item,
+    if helpers.matchQuery(query, "clipboard", "history", "paste") then
+      local clearId = "clipboard:clear"
+      table.insert(items, {
+        id = clearId,
+        kind = "command",
+        title = "Clear Clipboard History",
+        subtitle = "Remove all saved clipboard items",
+        badge = "Clipboard",
+        accent = helpers.accentForId(clearId),
+        keywords = "clipboard history clear",
+        actions = {
+          { id = "open", label = "Clear All", primary = true },
+        },
       })
+      handlers[clearId] = M.clear
+      handlers[clearId .. ":open"] = M.clear
     end
 
-    return choices
-  end
-
-  function M.openChooser()
-    local chooser = hs.chooser.new(function(choice)
-      if not choice then
-        return
+    local maxVisible = helpers.normalizeText(query) and #clipboardHistory or math.min(12, #clipboardHistory)
+    for index = 1, maxVisible do
+      local text = clipboardHistory[index]
+      local preview = helpers.previewText(text, 80)
+      if helpers.matchQuery(query, preview, text) then
+        local id = "clipboard:" .. index
+        table.insert(items, {
+          id = id,
+          kind = "clipboard",
+          title = preview,
+          subtitle = "Clipboard history",
+          badge = "Clipboard",
+          accent = helpers.accentForId(id),
+          keywords = text,
+          actions = {
+            { id = "paste", label = "Paste", primary = true },
+            { id = "copy", label = "Copy Again" },
+            { id = "delete", label = "Delete" },
+          },
+        })
+        handlers[id] = function()
+          M.pasteToFrontmostApp(text)
+        end
+        handlers[id .. ":paste"] = handlers[id]
+        handlers[id .. ":copy"] = function()
+          M.copyAgain(text)
+        end
+        handlers[id .. ":delete"] = function()
+          M.deleteAt(index)
+        end
       end
+    end
 
-      if choice.action == "clear" then
-        M.clear()
-        return
+    for _, snippet in ipairs(config.snippets or {}) do
+      if helpers.matchQuery(query, snippet.title, snippet.text, snippet.keywords) then
+        local id = "snippet:" .. helpers.hashString(snippet.title)
+        table.insert(items, {
+          id = id,
+          kind = "snippet",
+          title = snippet.title,
+          subtitle = helpers.previewText(snippet.text, 60),
+          badge = "Snippet",
+          accent = helpers.accentForId(id),
+          keywords = table.concat({ snippet.title, snippet.text, snippet.keywords }, " "),
+          actions = {
+            { id = "paste", label = "Paste", primary = true },
+            { id = "copy", label = "Copy" },
+          },
+        })
+        handlers[id] = function()
+          M.pasteToFrontmostApp(snippet.text)
+        end
+        handlers[id .. ":paste"] = handlers[id]
+        handlers[id .. ":copy"] = function()
+          M.copyAgain(snippet.text)
+        end
       end
+    end
 
-      if choice.action == "item" then
-        helpers.chooseFromList("Clipboard item", {
-          { text = "Paste", subText = "Paste into front app", action = "paste" },
-          { text = "Copy Again", subText = "Put item back on clipboard", action = "copy" },
-          { text = "Delete", subText = "Remove from history", action = "delete" },
-        }, function(actionChoice)
-          if actionChoice.action == "paste" then
-            M.pasteToFrontmostApp(choice.value)
-            return
-          end
-          if actionChoice.action == "copy" then
-            M.copyAgain(choice.value)
-            M.openChooser()
-            return
-          end
-          if actionChoice.action == "delete" then
-            M.deleteAt(choice.index)
-          end
-        end)
-      end
-    end)
-
-    chooser:searchSubText(true)
-    chooser:placeholderText("Clipboard history")
-    chooser:choices(buildChoices())
-    chooser:show()
+    return items, handlers
   end
 
   function M.launcherCommands()
-    return {
-      {
-        id = "clipboard",
-        text = "Clipboard History",
-        subText = "Browse the last 80 copied items",
-        run = M.openChooser,
-      },
-    }
+    return {}
   end
 
   function M.start()
