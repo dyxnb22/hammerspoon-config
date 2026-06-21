@@ -75,7 +75,8 @@ return function(config, helpers)
       merged = applyLayoutOrder(merged)
     end
 
-    return searchIndex.rankItems(merged, query)
+    merged = searchIndex.rankItems(merged, query)
+    return searchIndex.applyBudgetsForQuery(merged, query)
   end
 
   function M.buildState(query, callback)

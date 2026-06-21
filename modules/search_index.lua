@@ -30,6 +30,12 @@ return function(config, helpers)
 
   M.applyGroupBudgets = applyGroupBudgets
 
+  function M.applyBudgetsForQuery(items, query)
+    local intent = queryIntent.classify(query)
+    local budgets = queryIntent.budgetsFor(intent)
+    return applyGroupBudgets(items, budgets)
+  end
+
   local function shellQuote(value)
     return "'" .. tostring(value):gsub("'", "'\\''") .. "'"
   end
@@ -259,9 +265,6 @@ return function(config, helpers)
   end
 
   function M.buildSync(query)
-    local intent = queryIntent.classify(query)
-    local budgets = queryIntent.budgetsFor(intent)
-
     local items = {}
     local handlers = {}
     local rank = 0
@@ -309,7 +312,7 @@ return function(config, helpers)
     items = M.rankItems(items, query)
 
     -- Apply per-group budgets based on classified query intent
-    items = applyGroupBudgets(items, budgets)
+    items = M.applyBudgetsForQuery(items, query)
 
     local limit = config.launcherResultLimit or 120
     if #items > limit then

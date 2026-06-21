@@ -52,7 +52,7 @@ function M.classify(query)
   local isCJK = ratio >= 0.3
 
   -- Short but semantically explicit keywords that override the "short" budget
-  if lower == "tr" then return "translate" end
+  if lower == "tr" or lower:match("^tr%s+") then return "translate" end
 
   -- 1-2 ASCII chars: very conservative (includes "a", "d", "no")
   if len <= 2 and not isCJK then return "short" end

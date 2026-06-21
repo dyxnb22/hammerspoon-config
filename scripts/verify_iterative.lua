@@ -341,11 +341,13 @@ local function runSyncRound()
   local runtimeSource = helpers.readFile(config.repoRoot .. "/modules/launcher_runtime.lua") or ""
   check("runtime has searchToken anti-stale guard", runtimeSource:find("searchToken", 1, true) ~= nil)
   check("runtime skips loading flash for short queries", runtimeSource:find("needsAsync", 1, true) ~= nil)
+  check("runtime merge reapplies query budgets", runtimeSource:find("applyBudgetsForQuery", 1, true) ~= nil)
 
   -- File search infrastructure
   local searchIndexSource = helpers.readFile(config.repoRoot .. "/modules/search_index.lua") or ""
   check("search_index has addAsyncSource", searchIndexSource:find("addAsyncSource", 1, true) ~= nil)
   check("search_index has parallel pending counter", searchIndexSource:find("pending", 1, true) ~= nil)
+  check("search_index exposes applyBudgetsForQuery", searchIndexSource:find("applyBudgetsForQuery", 1, true) ~= nil)
 
   -- ── Intent Router & Budget ─────────────────────────────────────────────────
   local queryIntentSource = helpers.readFile(config.repoRoot .. "/modules/query_intent.lua") or ""
@@ -381,6 +383,10 @@ local function runSyncRound()
   -- 'tr' should trigger translate (it's an explicit keyword) but no todo:add
   local trItems2 = searchIndex.buildSync("tr")
   check("'tr' prefix triggers translate or hint", findItem(trItems2, function(item)
+    return item.kind == "ai" or item.id:match("^translate:")
+  end) ~= nil)
+  local trHelloItems = searchIndex.buildSync("tr hello")
+  check("'tr hello' triggers translate intent", findItem(trHelloItems, function(item)
     return item.kind == "ai" or item.id:match("^translate:")
   end) ~= nil)
 
